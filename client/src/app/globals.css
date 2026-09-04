@@ -40,3 +40,8 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* LiveKit: hide the default control bar — we render a custom premium one */
+.lk-control-bar {
+  display: none !important;
+}

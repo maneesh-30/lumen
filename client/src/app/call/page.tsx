@@ -6,9 +6,36 @@ import {
   VideoConference,
   useConnectionState,
   useDataChannel,
+  useLocalParticipant,
   useRoomContext,
 } from "@livekit/components-react";
 import { useState, type ReactNode } from "react";
+
+const IconMic = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M5 10a7 7 0 0 0 14 0M12 19v3" />
+  </svg>
+);
+const IconMicOff = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m2 2 20 20" />
+    <path d="M9 9v3a3 3 0 0 0 5 2M15 9.34V5a3 3 0 0 0-5.68-1.33" />
+    <path d="M5 10a7 7 0 0 0 10.7 6M12 19v3" />
+  </svg>
+);
+const IconScreen = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2" />
+    <path d="M8 21h8M12 17v4" />
+  </svg>
+);
+const IconLeave = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.18 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91" />
+    <path d="m2 2 20 20" />
+  </svg>
+);
 
 const API = process.env.NEXT_PUBLIC_BRAIN_API_URL ?? "http://localhost:8000";
 
@@ -110,7 +137,10 @@ export default function CallPage() {
 function Meeting() {
   const room = useRoomContext();
   const roomState = useConnectionState();
+  const { localParticipant } = useLocalParticipant();
 
+  const [micOn, setMicOn] = useState(true);
+  const [shareOn, setShareOn] = useState(false);
   const [view, setView] = useState<"operator" | "customer">("operator");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [trace, setTrace] = useState<TraceStep[]>([]);
@@ -144,6 +174,28 @@ function Meeting() {
     } catch {
       /* ignore */
     }
+  }
+
+  async function toggleMic() {
+    try {
+      await localParticipant.setMicrophoneEnabled(!micOn);
+      setMicOn(!micOn);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function toggleShare() {
+    try {
+      await localParticipant.setScreenShareEnabled(!shareOn);
+      setShareOn(!shareOn);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function leave() {
+    room.disconnect();
   }
 
   async function loadCode(id: string) {
@@ -199,6 +251,34 @@ function Meeting() {
             </button>
           ))}
         </div>
+        </div>
+
+        {/* premium control bar (custom — no camera) */}
+        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
+          <button
+            onClick={toggleMic}
+            title="Microphone"
+            className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition ${
+              micOn ? "bg-white/10 text-white hover:bg-white/20" : "bg-red-600 text-white"
+            }`}
+          >
+            {micOn ? IconMic : IconMicOff}
+          </button>
+          <button
+            onClick={toggleShare}
+            title="Share screen"
+            className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition ${
+              shareOn ? "bg-[#e07a57] text-white" : "bg-white/10 text-white hover:bg-white/20"
+            }`}
+          >
+            {IconScreen}
+          </button>
+          <button
+            onClick={leave}
+            className="flex h-11 cursor-pointer items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-medium text-white transition hover:bg-red-500"
+          >
+            {IconLeave} Leave
+          </button>
         </div>
       </div>
 

@@ -85,7 +85,10 @@ class LumenAgent(Agent):
         await self._publish({"type": "thinking", "question": question})
 
         # immediate spoken acknowledgement (plays during the search)
-        ack = self.session.say("Let me check.")
+        try:
+            ack = self.session.say("Let me check.")
+        except Exception:
+            ack = None
         try:
             result = await _ask_brain(question)
             answer = result.get("answer", "")
@@ -99,10 +102,14 @@ class LumenAgent(Agent):
         await self._publish({"type": "answer", "question": question, **result})
 
         try:
-            await ack
+            if ack is not None:
+                await ack
         except Exception:
             pass
-        await self.session.say(spoken)
+        try:
+            await self.session.say(spoken)
+        except Exception:
+            logger.info("session closing; skipped speaking the answer")
         raise StopResponse()
 
 

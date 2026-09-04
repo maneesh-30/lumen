@@ -107,7 +107,8 @@ npm run dev                 # http://localhost:3000
 ```
 
 Then open **http://localhost:3000** — type a question in the console, or go to
-**/call** to ask by voice.
+**/call** to ask by voice. For the live call use a Chromium browser (Edge or Chrome)
+with microphone access allowed, and click **Sound** once to enable audio playback.
 
 ## Environment variables
 

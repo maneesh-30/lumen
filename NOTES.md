@@ -141,9 +141,10 @@ tested on a real mic — an automated browser blocks mic capture.)
 
 - The worker publishes each result (`{question, answer, citations, trace}`) to the room
   as a LiveKit data message; the call page renders it live.
-- The call page uses LiveKit's prebuilt `VideoConference` for the participant grid, plus
-  a custom **premium control bar** (mic / screen-share / leave — no camera) and a
-  right-hand **evidence sidebar** (trace / sources / code).
+- The call page uses LiveKit's prebuilt `VideoConference` (participant grid + its native
+  control bar — mic / camera / screen-share / leave) plus a right-hand **evidence sidebar**
+  (trace / sources / code). We tried a custom control bar with manual mic handling and
+  reverted it: the native bar publishes the mic far more reliably.
 - **Operator ⇄ Customer toggle:** operator sees the evidence; customer sees only the
   conversation. The customer never sees the code.
 

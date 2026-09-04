@@ -6,36 +6,9 @@ import {
   VideoConference,
   useConnectionState,
   useDataChannel,
-  useLocalParticipant,
   useRoomContext,
 } from "@livekit/components-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-
-const IconMic = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0M12 19v3" />
-  </svg>
-);
-const IconMicOff = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m2 2 20 20" />
-    <path d="M9 9v3a3 3 0 0 0 5 2M15 9.34V5a3 3 0 0 0-5.68-1.33" />
-    <path d="M5 10a7 7 0 0 0 10.7 6M12 19v3" />
-  </svg>
-);
-const IconScreen = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="3" width="20" height="14" rx="2" />
-    <path d="M8 21h8M12 17v4" />
-  </svg>
-);
-const IconLeave = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.18 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91" />
-    <path d="m2 2 20 20" />
-  </svg>
-);
+import { useState, type ReactNode } from "react";
 
 const API = process.env.NEXT_PUBLIC_BRAIN_API_URL ?? "http://localhost:8000";
 
@@ -54,9 +27,7 @@ export default function CallPage() {
     setJoining(true);
     setError(null);
     try {
-      // unique room per call — avoids a stale/draining agent on the reused room
-      const room = `lumen-${Math.random().toString(36).slice(2, 8)}`;
-      const r = await fetch(`/api/livekit-token?room=${room}`);
+      const r = await fetch("/api/livekit-token?room=lumen-demo");
       if (!r.ok) throw new Error(`token ${r.status}`);
       setConn(await r.json());
     } catch (e) {
@@ -67,54 +38,20 @@ export default function CallPage() {
 
   if (!conn) {
     return (
-      <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#14110d] text-[#f5f1e8]">
-        {/* dotted grid */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-50"
-          style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
-          }}
-        />
-        {/* warm radial glow */}
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[80vmax] w-[80vmax] -translate-x-1/2 -translate-y-1/4 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(201,100,66,0.30) 0%, rgba(201,100,66,0.08) 32%, transparent 62%)",
-            filter: "blur(20px)",
-          }}
-        />
-
-        {/* top bar */}
-        <nav className="relative z-10 flex items-center justify-between px-8 py-6">
-          <span className="text-sm font-medium tracking-[0.3em]">LUMEN</span>
-          <span className="text-xs uppercase tracking-[0.3em] text-[#a8a196]">Live Call</span>
-        </nav>
-
-        {/* hero */}
-        <div className="relative z-10 flex flex-1 flex-col justify-center px-8 sm:px-16">
-          <p className="mb-5 flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-[#c9a08c]">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#e07a57]" />
-            Grounded · Cited · Verified
-          </p>
-          <h1 className="font-serif text-6xl font-light leading-[0.95] tracking-[0.04em] sm:text-8xl">
-            LUMEN
-          </h1>
-          <div className="mt-8 max-w-xl space-y-1 text-[#b8b0a4] sm:text-lg">
-            <p>An AI teammate that joins your call and answers from your codebase.</p>
-            <p>Every claim cited to real code and independently verified — or it says it doesn&apos;t know.</p>
-          </div>
-          <button
-            onClick={join}
-            disabled={joining}
-            className="group mt-10 flex w-fit cursor-pointer items-center gap-3 border-b border-white/30 pb-2 text-sm uppercase tracking-[0.25em] transition-colors hover:border-[#e07a57] disabled:opacity-50"
-          >
-            {joining ? "Joining…" : "Join the call"}
-            <span className="transition-transform group-hover:translate-x-1">↓</span>
-          </button>
-          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-        </div>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-neutral-950 px-6 text-neutral-100">
+        <h1 className="text-4xl font-semibold tracking-tight">Lumen — Live Call</h1>
+        <p className="max-w-md text-center text-neutral-400">
+          Join the call and ask about the codebase out loud. Lumen listens, searches, and
+          answers — grounded and verified.
+        </p>
+        <button
+          onClick={join}
+          disabled={joining}
+          className="rounded-lg bg-neutral-100 px-6 py-3 font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+        >
+          {joining ? "Joining…" : "Join call"}
+        </button>
+        {error && <p className="text-sm text-red-400">{error}</p>}
       </main>
     );
   }
@@ -127,7 +64,7 @@ export default function CallPage() {
       audio
       video={false}
       data-lk-theme="default"
-      className="h-screen bg-background text-foreground"
+      className="h-screen bg-neutral-950 text-neutral-100"
       onError={(e) => setError(e.message)}
       onDisconnected={() => setConn(null)}
     >
@@ -139,10 +76,7 @@ export default function CallPage() {
 function Meeting() {
   const room = useRoomContext();
   const roomState = useConnectionState();
-  const { localParticipant } = useLocalParticipant();
 
-  const [micOn, setMicOn] = useState(true);
-  const [shareOn, setShareOn] = useState(false);
   const [view, setView] = useState<"operator" | "customer">("operator");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [trace, setTrace] = useState<TraceStep[]>([]);
@@ -178,39 +112,6 @@ function Meeting() {
     }
   }
 
-  async function toggleMic() {
-    try {
-      await localParticipant.setMicrophoneEnabled(!micOn);
-      setMicOn(!micOn);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function toggleShare() {
-    try {
-      await localParticipant.setScreenShareEnabled(!shareOn);
-      setShareOn(!shareOn);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function leave() {
-    room.disconnect();
-  }
-
-  // Force the mic to publish once connected (the `audio` prop alone can leave it muted).
-  const micForced = useRef(false);
-  useEffect(() => {
-    if (roomState !== "connected" || micForced.current) return;
-    micForced.current = true;
-    localParticipant
-      .setMicrophoneEnabled(true)
-      .then(() => setMicOn(true))
-      .catch(() => {});
-  }, [roomState, localParticipant]);
-
   async function loadCode(id: string) {
     const c = citations.find((x) => x.id === id);
     if (!c || !c.repo) return;
@@ -227,92 +128,64 @@ function Meeting() {
   }
 
   return (
-    <div className="flex h-screen">
-      {/* LiveKit prebuilt meeting UI */}
-      <div className="relative flex-1 bg-neutral-950">
+    <div className="relative flex h-screen">
+      {/* LiveKit prebuilt meeting UI (70%) */}
+      <div className="flex-1">
         <VideoConference />
+      </div>
 
-        {/* floating status + sound + view toggle — over the video, not the sidebar */}
-        <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+      {/* floating status + view toggle + sound */}
+      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${
             status === "thinking"
-              ? "bg-amber-100 text-amber-800"
+              ? "bg-amber-500/20 text-amber-300"
               : status === "live"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-neutral-200 text-neutral-700"
+                ? "bg-emerald-500/20 text-emerald-300"
+                : "bg-neutral-700 text-neutral-300"
           }`}
         >
           {status === "thinking" ? "● Lumen thinking…" : status === "live" ? "● live" : "connecting…"}
         </span>
         <button
           onClick={enableSound}
-          className="cursor-pointer rounded-full bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-[#b0512f]"
+          className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500"
         >
           🔊 Sound
         </button>
-        <div className="flex rounded-full border border-border bg-surface p-0.5 text-xs shadow-sm">
+        <div className="flex rounded-full border border-neutral-700 bg-neutral-900/80 p-0.5 text-xs">
           {(["operator", "customer"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`cursor-pointer rounded-full px-3 py-1 capitalize ${
-                view === v ? "bg-accent text-white" : "text-muted"
+              className={`rounded-full px-3 py-1 capitalize ${
+                view === v ? "bg-neutral-100 text-neutral-900" : "text-neutral-300"
               }`}
             >
               {v}
             </button>
           ))}
         </div>
-        </div>
-
-        {/* premium control bar (custom — no camera) */}
-        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
-          <button
-            onClick={toggleMic}
-            title="Microphone"
-            className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition ${
-              micOn ? "bg-white/10 text-white hover:bg-white/20" : "bg-red-600 text-white"
-            }`}
-          >
-            {micOn ? IconMic : IconMicOff}
-          </button>
-          <button
-            onClick={toggleShare}
-            title="Share screen"
-            className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition ${
-              shareOn ? "bg-[#e07a57] text-white" : "bg-white/10 text-white hover:bg-white/20"
-            }`}
-          >
-            {IconScreen}
-          </button>
-          <button
-            onClick={leave}
-            className="flex h-11 cursor-pointer items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-medium text-white transition hover:bg-red-500"
-          >
-            {IconLeave} Leave
-          </button>
-        </div>
       </div>
 
-      {/* evidence sidebar (operator only) */}
+      {/* evidence sidebar (30%, operator only) */}
       {isOperator && (
-        <aside className="flex w-[32%] min-w-[320px] flex-col gap-3 overflow-y-auto border-l border-border bg-background p-4">
+        <aside className="flex w-[32%] min-w-[320px] flex-col gap-3 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-muted">Evidence</div>
-            <p className="text-xs text-muted/80">What Lumen grounded its last answer in.</p>
+            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Evidence</div>
+            <p className="text-xs text-neutral-600">What Lumen grounded its last answer in.</p>
           </div>
 
           <Panel title="Trace">
             {trace.length === 0 ? (
-              <p className="text-xs text-muted">Runs after a question.</p>
+              <p className="text-xs text-neutral-600">Runs after a question.</p>
             ) : (
               <ol className="space-y-1.5">
                 {trace.map((t, i) => (
                   <li key={i} className="flex items-center gap-2 font-mono text-xs">
-                    <span className="w-14 text-muted">{String(t.step)}</span>
-                    <span className="flex-1 text-foreground/80">{formatTrace(t)}</span>
-                    {typeof t.ms === "number" && <span className="text-muted">{t.ms as number}ms</span>}
+                    <span className="w-14 text-neutral-500">{String(t.step)}</span>
+                    <span className="flex-1 text-neutral-300">{formatTrace(t)}</span>
+                    {typeof t.ms === "number" && <span className="text-neutral-500">{t.ms as number}ms</span>}
                   </li>
                 ))}
               </ol>
@@ -321,18 +194,18 @@ function Meeting() {
 
           <Panel title="Sources">
             {citations.length === 0 ? (
-              <p className="text-xs text-muted">Citations appear here.</p>
+              <p className="text-xs text-neutral-600">Citations appear here.</p>
             ) : (
               <ul className="space-y-1">
                 {citations.map((c) => (
                   <li key={c.id}>
                     <button
                       onClick={() => loadCode(c.id)}
-                      className={`w-full cursor-pointer rounded-lg px-2 py-1 text-left font-mono text-xs transition-colors hover:bg-surface-2 ${
-                        activeId === c.id ? "bg-surface-2 text-foreground" : "text-muted"
+                      className={`w-full rounded px-2 py-1 text-left font-mono text-xs hover:bg-neutral-800 ${
+                        activeId === c.id ? "bg-neutral-800 text-neutral-100" : "text-neutral-400"
                       }`}
                     >
-                      <span className="text-accent">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
+                      <span className="text-emerald-400">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
                     </button>
                   </li>
                 ))}
@@ -342,19 +215,19 @@ function Meeting() {
 
           <Panel title={`Code${code ? ` · ${code.path}` : ""}`} grow>
             {code ? (
-              <pre className="overflow-x-auto rounded-lg bg-surface-2 p-3 text-xs leading-relaxed">
+              <pre className="overflow-x-auto rounded-lg bg-neutral-900 p-3 text-xs leading-relaxed">
                 {code.lines.map((l) => {
                   const hot = l.n >= code.start && l.n <= code.end;
                   return (
-                    <div key={l.n} className={hot ? "bg-accent-soft" : ""}>
-                      <span className="mr-3 inline-block w-8 select-none text-right text-muted">{l.n}</span>
-                      <span className="text-foreground/90">{l.text || " "}</span>
+                    <div key={l.n} className={hot ? "bg-emerald-950/40" : ""}>
+                      <span className="mr-3 inline-block w-8 select-none text-right text-neutral-600">{l.n}</span>
+                      <span className="text-neutral-300">{l.text || " "}</span>
                     </div>
                   );
                 })}
               </pre>
             ) : (
-              <p className="text-xs text-muted">Click a citation to see the source.</p>
+              <p className="text-xs text-neutral-600">Click a citation to see the source.</p>
             )}
           </Panel>
         </aside>
@@ -365,8 +238,8 @@ function Meeting() {
 
 function Panel({ title, grow, children }: { title: string; grow?: boolean; children: ReactNode }) {
   return (
-    <div className={`rounded-xl border border-border bg-surface p-3 shadow-sm ${grow ? "flex-1" : ""}`}>
-      <div className="mb-2 text-xs font-medium uppercase tracking-widest text-muted">{title}</div>
+    <div className={`rounded-xl border border-neutral-800 bg-neutral-900/50 p-3 ${grow ? "flex-1" : ""}`}>
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{title}</div>
       {children}
     </div>
   );

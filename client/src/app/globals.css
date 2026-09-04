@@ -46,3 +46,25 @@ body {
 .lk-control-bar [data-lk-source="camera"] {
   display: none !important;
 }
+
+/* Call join-screen animations (scoped names; no effect on other pages) */
+@keyframes lumen-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes lumen-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.9; }
+}
+@keyframes lumen-drift {
+  from { background-position: 0 0, 60px 40px; }
+  to   { background-position: -440px 220px, 380px -190px; }
+}
+@keyframes lumen-glow {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+@keyframes lumen-orbit {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}

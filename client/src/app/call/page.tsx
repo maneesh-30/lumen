@@ -40,20 +40,68 @@ export default function CallPage() {
 
   if (!conn) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-neutral-950 px-6 text-neutral-100">
-        <h1 className="text-4xl font-semibold tracking-tight">Lumen — Live Call</h1>
-        <p className="max-w-md text-center text-neutral-400">
-          Join the call and ask about the codebase out loud. Lumen listens, searches, and
-          answers — grounded and verified.
-        </p>
-        <button
-          onClick={join}
-          disabled={joining}
-          className="rounded-lg bg-neutral-100 px-6 py-3 font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
-        >
-          {joining ? "Joining…" : "Join call"}
-        </button>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+      <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#04060c] px-6 text-[#e8f3ff]">
+        {/* starfield — two drifting, twinkling layers */}
+        <div
+          className="pointer-events-none absolute inset-0 animate-[lumen-drift_90s_linear_infinite] opacity-60"
+          style={{
+            backgroundImage:
+              "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1.5px), radial-gradient(rgba(186,230,253,0.9) 1px, transparent 1.6px)",
+            backgroundSize: "110px 110px, 190px 190px",
+            backgroundPosition: "0 0, 60px 40px",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 animate-[lumen-twinkle_5s_ease-in-out_infinite]"
+          style={{
+            backgroundImage: "radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1.6px)",
+            backgroundSize: "260px 260px",
+            backgroundPosition: "130px 90px",
+          }}
+        />
+
+        {/* orbit ring with a travelling satellite dot */}
+        <div className="pointer-events-none absolute left-1/2 top-[68%] h-[120vmax] w-[120vmax] animate-[lumen-orbit_28s_linear_infinite] rounded-full border border-cyan-300/15">
+          <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200 shadow-[0_0_14px_4px_rgba(125,211,252,0.8)]" />
+        </div>
+
+        {/* the light — glowing planet horizon */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-[70%] h-[200vmax] w-[200vmax] -translate-x-1/2 animate-[lumen-glow_6s_ease-in-out_infinite] rounded-full bg-[#04060c]"
+          style={{
+            boxShadow:
+              "0 -2px 0 rgba(186,230,253,0.95), 0 -18px 40px rgba(56,189,248,0.55), 0 -60px 140px rgba(56,189,248,0.35), 0 -140px 320px rgba(14,165,233,0.22)",
+          }}
+        />
+
+        {/* content */}
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <p className="mb-5 flex animate-[lumen-rise_0.8s_ease-out_both] items-center gap-2 text-[11px] uppercase tracking-[0.45em] text-cyan-300/90">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_2px_rgba(103,232,249,0.8)]" />
+            Live call
+          </p>
+          <h1 className="animate-[lumen-rise_0.9s_ease-out_both] text-4xl font-light uppercase leading-[1.05] tracking-[0.18em] sm:text-6xl md:text-7xl [animation-delay:120ms]">
+            Welcome to
+            <br />
+            <span className="font-semibold text-cyan-300 [text-shadow:0_0_24px_rgba(34,211,238,0.55)]">
+              Lumen
+            </span>
+          </h1>
+          <p className="mt-7 max-w-lg animate-[lumen-rise_0.9s_ease-out_both] text-sm leading-relaxed text-[#9fb7cc] sm:text-base [animation-delay:260ms]">
+            An AI teammate that joins your call and answers from your codebase.
+            <br />
+            Every claim cited to real code and independently verified — or it says it
+            doesn&apos;t know.
+          </p>
+          <button
+            onClick={join}
+            disabled={joining}
+            className="mt-10 animate-[lumen-rise_0.9s_ease-out_both] rounded-full bg-cyan-300 px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#04060c] shadow-[0_0_30px_rgba(34,211,238,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_0_56px_rgba(34,211,238,0.85)] disabled:opacity-50 [animation-delay:400ms]"
+          >
+            {joining ? "Joining…" : "Join the call"}
+          </button>
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        </div>
       </main>
     );
   }

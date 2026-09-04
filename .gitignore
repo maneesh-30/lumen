@@ -1,0 +1,25 @@
+# secrets / env — never commit real keys
+.env
+.env.local
+*.pem
+repos_storage/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# node / next
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

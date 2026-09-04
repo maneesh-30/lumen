@@ -16,11 +16,19 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
 
-    # llm + embeddings
+    # openrouter (LLM + embeddings, OpenAI-compatible)
     openrouter_api_key: str = ""
-    gemini_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    llm_model: str = "google/gemini-3.5-flash-lite"
+    vision_model: str = "google/gemini-3.7-flash"
+    embed_model: str = "openai/text-embedding-3-small"
+    embed_dim: int = 1536
+
+    # verifier (Featherless, OpenAI-compatible)
     featherless_api_key: str = ""
+    featherless_base_url: str = "https://api.featherless.ai/v1"
     verify_provider: str = "featherless"
+    verify_model: str = "Qwen/Qwen3-8B"
 
     # github
     github_token: str = ""

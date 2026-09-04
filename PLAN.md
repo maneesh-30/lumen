@@ -47,6 +47,12 @@ Indic voice (Sarvam), richer trace timings, screen-share vision, the code→comm
 →PR→Slack "why" chain (Neo4j), a second real connector, async ingestion (Celery/Redis),
 auth hardening, GitHub App for private repos.
 
+## UI TODO
+
+- **Operator vs customer view toggle** — customer view shows only the spoken/written
+  answer; operator view adds the code sidebar, trace panel, and raw citations. Never show
+  the customer the repo. (Requested during P4.)
+
 ## Working rules
 
 - Commit incrementally with real messages; push often (no single bulk push).

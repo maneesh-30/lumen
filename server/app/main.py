@@ -6,6 +6,8 @@ land in later phases (see PLAN.md).
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import agent, code
+
 app = FastAPI(title="Lumen", version="0.1.0")
 
 app.add_middleware(
@@ -20,3 +22,7 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "lumen-server"}
+
+
+app.include_router(agent.router)
+app.include_router(code.router)

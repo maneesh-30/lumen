@@ -89,7 +89,7 @@ def answer(question: str, workspace_id: str = "demo", limit: int = 6) -> dict:
     return {
         "answer": final,
         "citations": [
-            {"id": c["id"], "file": c["file"],
+            {"id": c["id"], "repo": c.get("repo"), "file": c["file"],
              "start_line": c["start_line"], "end_line": c["end_line"]}
             for c in cited
         ],

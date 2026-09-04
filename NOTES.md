@@ -97,4 +97,25 @@ answer, then a "verified" badge) so it never adds to perceived latency.
 **Verified:** real questions pass with citations; "stripe billing" abstains (verify
 skipped). Every remaining claim is checked by the second model.
 
+## P4 — HTTP + web console
+
+**What we built:** the browser demo — two endpoints and a Next.js console.
+
+- `POST /api/agent/ask` (`app/routers/agent.py`) — the HTTP adapter over the same
+  `answer()` the CLI uses. Returns `{answer, citations, trace, abstained}`.
+- `GET /api/code` (`app/routers/code.py`) — returns a slice of a source file (plus a few
+  lines of context) for the code sidebar; refuses any path outside the repos folder.
+- Console (`client/src/app/page.tsx`):
+  - question box + example chips,
+  - answer with inline **clickable [E#] citations** and a **verified / abstained** badge,
+  - a **sources** list,
+  - a **trace panel** (retrieve / compose / verify + timings + verdict),
+  - a **code sidebar** showing the real file at the cited lines, highlighted.
+
+Same brain as the CLI — the web page is just another transport into `answer()`.
+
+**Verified in the browser:** "how does the VLM answer questions" → answer with clickable
+citations, verify verdict shown, and clicking `[E1]` opened `webapp/server.py` at the
+cited lines.
+
 

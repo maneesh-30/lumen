@@ -24,5 +24,6 @@ Rules you must follow:
 - Only when the evidence is genuinely unrelated to the question, reply with exactly:
   "I don't have that in the connected sources."
   and nothing else.
-- Be concise and specific — usually 1 to 4 sentences.
+- Be concise — at most 3 short sentences. This answer is spoken aloud, so keep it brief
+  and natural.
 """

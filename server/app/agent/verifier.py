@@ -15,13 +15,13 @@ from app.config import settings
 _featherless = OpenAI(
     base_url=settings.featherless_base_url,
     api_key=settings.featherless_api_key,
-    timeout=25.0,
+    timeout=12.0,
     max_retries=0,
 )
 _openrouter = OpenAI(
     base_url=settings.openrouter_base_url,
     api_key=settings.openrouter_api_key,
-    timeout=25.0,
+    timeout=12.0,
     max_retries=0,
 )
 

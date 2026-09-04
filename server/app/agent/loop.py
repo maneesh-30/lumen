@@ -54,7 +54,7 @@ def answer(question: str, workspace_id: str = "demo", limit: int = 6) -> dict:
     ]
     t1 = time.perf_counter()
     resp = _client.chat.completions.create(
-        model=settings.llm_model, messages=compose_messages, temperature=0
+        model=settings.llm_model, messages=compose_messages, temperature=0, max_tokens=280
     )
     draft = (resp.choices[0].message.content or "").strip()
     trace.append({

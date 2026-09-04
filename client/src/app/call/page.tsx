@@ -38,24 +38,54 @@ export default function CallPage() {
 
   if (!conn) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-5 bg-background px-6 text-foreground">
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
-          <span className="text-xs font-medium uppercase tracking-widest text-muted">Lumen · Live Call</span>
+      <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#14110d] text-[#f5f1e8]">
+        {/* dotted grid */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
+            backgroundSize: "30px 30px",
+          }}
+        />
+        {/* warm radial glow */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[80vmax] w-[80vmax] -translate-x-1/2 -translate-y-1/4 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(201,100,66,0.30) 0%, rgba(201,100,66,0.08) 32%, transparent 62%)",
+            filter: "blur(20px)",
+          }}
+        />
+
+        {/* top bar */}
+        <nav className="relative z-10 flex items-center justify-between px-8 py-6">
+          <span className="text-sm font-medium tracking-[0.3em]">LUMEN</span>
+          <span className="text-xs uppercase tracking-[0.3em] text-[#a8a196]">Live Call</span>
+        </nav>
+
+        {/* hero */}
+        <div className="relative z-10 flex flex-1 flex-col justify-center px-8 sm:px-16">
+          <p className="mb-5 flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-[#c9a08c]">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#e07a57]" />
+            Grounded · Cited · Verified
+          </p>
+          <h1 className="font-serif text-6xl font-light leading-[0.95] tracking-[0.04em] sm:text-8xl">
+            LUMEN
+          </h1>
+          <div className="mt-8 max-w-xl space-y-1 text-[#b8b0a4] sm:text-lg">
+            <p>An AI teammate that joins your call and answers from your codebase.</p>
+            <p>Every claim cited to real code and independently verified — or it says it doesn&apos;t know.</p>
+          </div>
+          <button
+            onClick={join}
+            disabled={joining}
+            className="group mt-10 flex w-fit cursor-pointer items-center gap-3 border-b border-white/30 pb-2 text-sm uppercase tracking-[0.25em] transition-colors hover:border-[#e07a57] disabled:opacity-50"
+          >
+            {joining ? "Joining…" : "Join the call"}
+            <span className="transition-transform group-hover:translate-x-1">↓</span>
+          </button>
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
         </div>
-        <h1 className="font-serif text-4xl font-medium tracking-tight">Join the call.</h1>
-        <p className="max-w-md text-center text-muted">
-          Ask about the codebase out loud. Lumen listens, searches, and answers — grounded and
-          verified.
-        </p>
-        <button
-          onClick={join}
-          disabled={joining}
-          className="cursor-pointer rounded-xl bg-accent px-6 py-3 font-medium text-white shadow-sm transition-colors hover:bg-[#b0512f] disabled:opacity-50"
-        >
-          {joining ? "Joining…" : "Join call"}
-        </button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
       </main>
     );
   }

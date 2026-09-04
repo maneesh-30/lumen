@@ -1,14 +1,15 @@
 """Lumen voice worker.
 
 Joins a LiveKit room, transcribes the caller (Deepgram STT), answers from the Lumen
-brain (POST /api/agent/ask — the same agent loop the web console uses), and speaks the
-answer back (Deepgram TTS). The brain is reached over plain HTTP, so this worker is just
-another transport into answer().
+brain (POST /api/agent/ask — the same agent loop the web console uses), speaks the
+answer back (Deepgram TTS), and publishes the full result (answer + citations + trace)
+to the room as a data message so the meeting UI can show the evidence live.
 
 The reply is produced in `on_user_turn_completed`: when the caller finishes a turn we
 take the transcript, call the brain, speak the answer, and stop the default (LLM) reply.
 This needs no LLM in the session — the brain is our reasoning.
 """
+import json
 import logging
 import os
 import re
@@ -46,12 +47,12 @@ def _text_of(msg) -> str:
     return ""
 
 
-async def _ask_brain(question: str) -> str:
+async def _ask_brain(question: str) -> dict:
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(
             f"{BRAIN_API_URL}/api/agent/ask", json={"question": question}
         )
-        return r.json().get("answer", "")
+        return r.json()
 
 
 class LumenAgent(Agent):
@@ -62,20 +63,41 @@ class LumenAgent(Agent):
                 "company's codebase, grounded in real sources."
             )
         )
+        self.room = None
+
+    async def _publish(self, data: dict) -> None:
+        if self.room is None:
+            return
+        try:
+            await self.room.local_participant.publish_data(
+                json.dumps(data).encode(), topic="lumen"
+            )
+        except Exception:
+            logger.exception("publish_data failed")
 
     async def on_user_turn_completed(self, turn_ctx, new_message) -> None:
         question = _text_of(new_message).strip()
         logger.info("question: %s", question)
         if not question:
             raise StopResponse()
-        # immediate acknowledgement so the caller knows it heard them (plays during the search)
+
+        # tell the UI we heard the question and are working on it
+        await self._publish({"type": "thinking", "question": question})
+
+        # immediate spoken acknowledgement (plays during the search)
         ack = self.session.say("Let me check.")
         try:
-            answer = await _ask_brain(question)
+            result = await _ask_brain(question)
+            answer = result.get("answer", "")
             spoken = CITE_RE.sub("", answer).strip() or "I don't have that in the connected sources."
         except Exception:
             logger.exception("brain call failed")
+            result = {"answer": "", "citations": [], "trace": []}
             spoken = "Sorry, I could not reach the knowledge base."
+
+        # send the full result (answer + citations + trace) to the meeting UI
+        await self._publish({"type": "answer", "question": question, **result})
+
         try:
             await ack
         except Exception:
@@ -91,7 +113,9 @@ async def entrypoint(ctx: JobContext) -> None:
         tts=deepgram.TTS(model="aura-2-thalia-en"),
         vad=silero.VAD.load(),
     )
-    await session.start(agent=LumenAgent(), room=ctx.room)
+    agent = LumenAgent()
+    await session.start(agent=agent, room=ctx.room)
+    agent.room = ctx.room
     await session.say("Hi, I'm Lumen. Ask me anything about the codebase.")
 
 

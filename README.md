@@ -120,12 +120,16 @@ Then open **http://localhost:3000** — type a question in the console, or go to
 
 Secrets live only in `.env` files, which are gitignored. See each `.env.example`.
 
-## Honest limitations
+## Scope & future work
 
 - Voice quality depends on a stable network (LiveKit is real-time).
-- Indic answers are spoken in-language but composed in English (translation is future
-  work); the win is understanding the caller's spoken language.
-- The agent endpoints are unauthenticated in this build (a deliberate demo-scope choice).
+- Indic answers are spoken in-language but composed in English; full in-language answers
+  (translation while preserving identifiers) are the next step. The win today is
+  understanding the caller's spoken language.
+- Agent endpoints are unauthenticated in this demo build; auth + per-workspace scoping is
+  the next step before real customer data.
+- More live connectors (Slack, Jira, Notion, Datadog) run through the same ingestion
+  pipeline — currently demonstrated with indexed code + docs.
 
 ## Repository notes
 

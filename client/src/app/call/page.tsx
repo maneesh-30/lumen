@@ -27,7 +27,9 @@ export default function CallPage() {
     setJoining(true);
     setError(null);
     try {
-      const r = await fetch("/api/livekit-token?room=lumen-demo");
+      // unique room per join — a reused room keeps the old draining agent and no new one is dispatched
+      const room = `lumen-${Math.random().toString(36).slice(2, 8)}`;
+      const r = await fetch(`/api/livekit-token?room=${room}`);
       if (!r.ok) throw new Error(`token ${r.status}`);
       setConn(await r.json());
     } catch (e) {

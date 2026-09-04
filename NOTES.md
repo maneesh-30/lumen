@@ -44,3 +44,26 @@ voice last — a broken microphone can never sink the demo.
 **Verified:** "how is audio captured" → `listen.py` / `audio.py`; "flask app" →
 `webapp/server.py`. Search matches by meaning, not keywords.
 
+## P2 — Agent loop (text)
+
+**What we built:** the full RAG loop as one transport-agnostic function,
+`answer(question, workspace_id)` in `app/agent/loop.py`.
+
+- **Plan + retrieve** — the LLM (`gemini-3.5-flash-lite` via OpenRouter) is given the
+  `search_code` tool and decides what to search, reformulating the query a few times to
+  gather enough evidence.
+- **Compose** — a second LLM call writes the answer using ONLY the retrieved evidence,
+  citing each claim as `[E#]`, which maps to a real `file:line`.
+- **Abstain** — if the evidence is unrelated, it replies "I don't have that in the
+  connected sources" instead of guessing.
+- Returns `{answer, citations, trace, abstained}`. The `trace` records every search and
+  the compose step (this feeds the trace panel later).
+
+**Verified with `ask_cli.py`:**
+- "how does the vlm answer questions" → real answer citing `blindspot/vlm.py`.
+- "what does this project do" → cites `README.md`.
+- "how does stripe billing work" → abstains (not in the repo). The safe failure works.
+
+No HTTP or voice involved — this is the exact function a live call will call.
+
+

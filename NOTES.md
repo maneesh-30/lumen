@@ -66,4 +66,9 @@ voice last — a broken microphone can never sink the demo.
 
 No HTTP or voice involved — this is the exact function a live call will call.
 
+**Latency:** the first version used a multi-step planner (~9 sequential LLM calls) and
+took ~15s. Switched to a single retrieve → compose (2 round-trips): retrieve ~1.5s +
+compose ~2s ≈ 4s in the warm server (the CLI adds ~3s of Python startup the server does
+not have). Streaming the answer (P4/P5) will make it feel ~1s.
+
 

@@ -118,4 +118,23 @@ Same brain as the CLI — the web page is just another transport into `answer()`
 citations, verify verdict shown, and clicking `[E1]` opened `webapp/server.py` at the
 cited lines.
 
+## P5 — Voice (LiveKit + Deepgram)
+
+**What we built:** speak a question, hear the cited answer.
+
+- **`call-agent/worker.py`** — a LiveKit Agents worker (livekit-agents 1.7). It joins the
+  room, transcribes the caller with Deepgram STT (nova-3), and speaks with Deepgram TTS
+  (aura-2). Silero VAD + LiveKit's turn detector decide when the caller has finished.
+- The answer comes from the **same brain**: the worker overrides `llm_node` to POST the
+  transcript to `/api/agent/ask` and speak the returned answer (citation markers stripped
+  for speech). Voice is just another transport into `answer()`.
+- **`client/src/app/api/livekit-token/route.ts`** — mints a LiveKit token server-side; the
+  API secret never reaches the browser.
+- **`client/src/app/call/page.tsx`** — the call UI: join, mic, an audio visualizer, and
+  the agent state (listening / thinking / speaking).
+
+**Verified:** joining the room dispatched the worker; the agent connected Deepgram STT +
+TTS, spoke its greeting ("Hi, I'm Lumen…"), and entered listening. (Actual speaking is
+tested on a real mic — an automated browser blocks mic capture.)
+
 

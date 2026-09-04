@@ -25,12 +25,14 @@ their editor and anyone on the call gets a trustworthy, sourced answer.
 ## Features
 
 - **Answers grounded in your code** — retrieval-augmented generation over an ingested
-  repository (and, by the same pipeline, docs / tickets / Slack).
+  repository (code + its docs). The same ingestion pipeline is built to take tickets and
+  Slack as further sources.
 - **A citation for every claim** — each answer cites the exact `file:line`; the operator
   can click it to see the source.
 - **Independently verified** — a second, *different* model (Qwen on Featherless)
-  re-checks every claim against the retrieved evidence before it's shown. Not the same
-  model grading itself.
+  re-checks every claim against the retrieved evidence. Not the same model grading
+  itself. The web console runs this check inline on every answer; the voice call requests
+  the fast path (`verify: false`) to keep spoken replies snappy, and shows the trace.
 - **Refuses to guess** — no supporting evidence → "I don't have that in the connected
   sources", never an invented answer.
 - **Joins a live call** — real WebRTC (LiveKit) with speech-to-text and text-to-speech.
@@ -53,8 +55,10 @@ workspace_id)` takes a question and returns a cited answer, knowing nothing abou
 the question arrived. So it's callable identically from a script, the web console, or a
 live voice call — three front doors, one brain.
 
-**Data stores** (via `docker-compose.yml`): **PostgreSQL** (relational records),
-**Qdrant** (vector search over code/doc chunks).
+**Data stores** (via `docker-compose.yml`): **Qdrant** (vector search over code/doc
+chunks — every point tagged with a `workspace_id` and filtered on it) and **PostgreSQL**
+(provisioned and configured for users / workspaces / meetings; the demo runs a single
+workspace, so the relational layer is not yet exercised).
 
 **The answer pipeline:** `retrieve` (embed the question, semantic-search Qdrant) →
 `compose` (LLM writes a cited answer from the evidence) → `verify` (independent model
@@ -89,8 +93,10 @@ python -m venv .venv
 cp .env.example .env        # fill in the keys (see below)
 .venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
 
-# 3. ingest a repository (once)
-.venv/Scripts/python ingest_cli.py            # clones + indexes a public repo
+# 3. ingest a repository (once): clone it, then chunk + embed it into Qdrant
+git clone --depth 1 https://github.com/scorp2006/BlindSpot.git repos_storage/BlindSpot
+.venv/Scripts/python ingest_cli.py            # indexes repos_storage/BlindSpot (110 chunks)
+# any public repo works: ingest_cli.py <repo_dir> <repo_name>
 
 # 4. call agent (only for live voice calls) — separate terminal, its own venv
 cd call-agent
@@ -134,5 +140,5 @@ Secrets live only in `.env` files, which are gitignored. See each `.env.example`
 
 ## Repository notes
 
-See [PLAN.md](PLAN.md) for the phased build plan and [NOTES.md](NOTES.md) for the
-decisions made along the way.
+See [DEMO.md](DEMO.md) for the demo script, [PLAN.md](PLAN.md) for the phased build
+plan, and [NOTES.md](NOTES.md) for the decisions made along the way.

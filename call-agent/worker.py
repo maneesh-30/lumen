@@ -24,12 +24,28 @@ from livekit.agents import (
     WorkerOptions,
     cli,
 )
-from livekit.plugins import deepgram, silero
+from livekit.plugins import deepgram, sarvam, silero
 
 load_dotenv()
 
 BRAIN_API_URL = os.getenv("BRAIN_API_URL", "http://localhost:8000")
+VOICE_STACK = os.getenv("VOICE_STACK", "deepgram")
+SARVAM_LANGUAGE = os.getenv("SARVAM_LANGUAGE", "hi-IN")
+SARVAM_TTS_SPEAKER = os.getenv("SARVAM_TTS_SPEAKER", "anushka")
 logger = logging.getLogger("lumen-agent")
+
+
+def _build_stt_tts():
+    """Pick the voice stack — Deepgram (English) or Sarvam (Indian languages)."""
+    if VOICE_STACK == "sarvam":
+        return (
+            sarvam.STT(language=SARVAM_LANGUAGE),
+            sarvam.TTS(target_language_code=SARVAM_LANGUAGE, speaker=SARVAM_TTS_SPEAKER),
+        )
+    return (
+        deepgram.STT(model="nova-3"),
+        deepgram.TTS(model="aura-2-thalia-en"),
+    )
 
 # strip [E1] / [E1, E3] citation markers before speaking
 CITE_RE = re.compile(r"\s*\[[^\]]*\]")
@@ -119,11 +135,8 @@ async def entrypoint(ctx: JobContext) -> None:
         await ctx.room.local_participant.set_name("Lumen")
     except Exception:
         pass
-    session = AgentSession(
-        stt=deepgram.STT(model="nova-3"),
-        tts=deepgram.TTS(model="aura-2-thalia-en"),
-        vad=silero.VAD.load(),
-    )
+    stt, tts = _build_stt_tts()
+    session = AgentSession(stt=stt, tts=tts, vad=silero.VAD.load())
     agent = LumenAgent()
     await session.start(agent=agent, room=ctx.room)
     agent.room = ctx.room

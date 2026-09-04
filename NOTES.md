@@ -137,4 +137,34 @@ cited lines.
 TTS, spoke its greeting ("Hi, I'm Lumen…"), and entered listening. (Actual speaking is
 tested on a real mic — an automated browser blocks mic capture.)
 
+## P6 — Full meeting UI
+
+- The worker publishes each result (`{question, answer, citations, trace}`) to the room
+  as a LiveKit data message; the call page renders it live.
+- The call page uses LiveKit's prebuilt `VideoConference` for the participant grid, plus
+  a custom **premium control bar** (mic / screen-share / leave — no camera) and a
+  right-hand **evidence sidebar** (trace / sources / code).
+- **Operator ⇄ Customer toggle:** operator sees the evidence; customer sees only the
+  conversation. The customer never sees the code.
+
+## Polish
+
+- **Theme:** Claude-style warm premium look — cream background, clay accent, Fraunces
+  serif headings. Call join screen is a dark cinematic hero.
+- **Voice latency:** the voice path calls the brain with `verify=false` for speed
+  (~5–6s); the web console keeps full verification. A concise-answer cap keeps replies
+  short and spoken-friendly.
+- **Sarvam (Indic voice):** `VOICE_STACK=sarvam` swaps STT+TTS to Sarvam
+  (`bulbul:v3`, speaker `priya`, `te-IN`) for Telugu/Hindi/Tamil. Deepgram stays the
+  English default.
+- **Network learning:** live voice depends on a stable connection to LiveKit Cloud —
+  flaky Wi-Fi drops the worker's socket (`1006`) and STT lags. The console has no such
+  dependency and is the reliable demo path.
+
+## Rules compliance
+
+Built during the event; incremental commit history throughout; secrets kept out of git
+(`.env` gitignored, `.env.example` committed); the human authored the commits with Claude
+as a co-author, understanding and owning the code.
+
 

@@ -68,12 +68,18 @@ class LumenAgent(Agent):
         logger.info("question: %s", question)
         if not question:
             raise StopResponse()
+        # immediate acknowledgement so the caller knows it heard them (plays during the search)
+        ack = self.session.say("Let me check.")
         try:
             answer = await _ask_brain(question)
             spoken = CITE_RE.sub("", answer).strip() or "I don't have that in the connected sources."
         except Exception:
             logger.exception("brain call failed")
             spoken = "Sorry, I could not reach the knowledge base."
+        try:
+            await ack
+        except Exception:
+            pass
         await self.session.say(spoken)
         raise StopResponse()
 

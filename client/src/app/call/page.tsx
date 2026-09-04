@@ -2,13 +2,15 @@
 
 import "@livekit/components-styles";
 import {
+  LiveKitRoom,
   RoomAudioRenderer,
   useConnectionState,
+  useIsSpeaking,
+  useLocalParticipant,
   useRoomContext,
   useVoiceAssistant,
-  LiveKitRoom,
 } from "@livekit/components-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Conn = { token: string; url: string };
 
@@ -67,15 +69,47 @@ export default function CallPage() {
   );
 }
 
+type Phase = "connecting" | "listening" | "thinking" | "answering";
+
+const PHASE_UI: Record<Phase, { label: string; hint: string; color: string; ring: string }> = {
+  connecting: { label: "Connecting…", hint: "Joining the call", color: "bg-neutral-600", ring: "" },
+  listening: { label: "Listening", hint: "Ask your question out loud", color: "bg-sky-500", ring: "animate-ping bg-sky-500/40" },
+  thinking: { label: "Thinking…", hint: "Searching the codebase", color: "bg-amber-500", ring: "animate-ping bg-amber-500/40" },
+  answering: { label: "Answering", hint: "Speaking the answer", color: "bg-emerald-500", ring: "animate-ping bg-emerald-500/50" },
+};
+
 function CallView({ error, onLeave }: { error: string | null; onLeave: () => void }) {
   const room = useRoomContext();
   const roomState = useConnectionState();
   const { state } = useVoiceAssistant();
+  const { localParticipant } = useLocalParticipant();
+  const userSpeaking = useIsSpeaking(localParticipant);
   const [soundOn, setSoundOn] = useState(false);
 
+  const lastUserSpoke = useRef(0);
+  const [, tick] = useState(0);
+
+  // re-evaluate the time-based phase a couple times a second
+  useEffect(() => {
+    const i = setInterval(() => tick((x) => x + 1), 400);
+    return () => clearInterval(i);
+  }, []);
+
+  useEffect(() => {
+    if (userSpeaking) lastUserSpoke.current = Date.now();
+  }, [userSpeaking]);
+
   const connected = roomState === "connected";
-  const speaking = state === "speaking";
-  const thinking = state === "thinking";
+  const agentSpeaking = state === "speaking";
+  const recentlyAsked = Date.now() - lastUserSpoke.current < 10000;
+
+  let phase: Phase = "listening";
+  if (!connected) phase = "connecting";
+  else if (agentSpeaking) phase = "answering";
+  else if (recentlyAsked && !userSpeaking) phase = "thinking";
+  else phase = "listening";
+
+  const ui = PHASE_UI[phase];
 
   async function enableSound() {
     try {
@@ -90,22 +124,19 @@ function CallView({ error, onLeave }: { error: string | null; onLeave: () => voi
     <div className="flex min-h-screen flex-col items-center justify-center gap-8">
       <h1 className="text-3xl font-semibold tracking-tight">Lumen</h1>
 
-      {/* simple, cheap status indicator (no heavy visualizer) */}
-      <div
-        className={`h-24 w-24 rounded-full transition-all ${
-          speaking
-            ? "animate-pulse bg-emerald-500"
-            : thinking
-              ? "animate-pulse bg-amber-500"
-              : connected
-                ? "bg-neutral-700"
-                : "bg-neutral-800"
-        }`}
-      />
+      {/* animated status orb */}
+      <div className="relative flex h-28 w-28 items-center justify-center">
+        {ui.ring && <span className={`absolute inline-flex h-full w-full rounded-full ${ui.ring}`} />}
+        <span className={`relative inline-flex h-20 w-20 rounded-full ${ui.color}`} />
+      </div>
 
-      <p className="text-sm uppercase tracking-widest text-neutral-300">
-        {connected ? state : roomState}
-      </p>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <p className="text-lg font-medium tracking-wide">{ui.label}</p>
+        <p className="text-sm text-neutral-500">{ui.hint}</p>
+        {userSpeaking && phase === "listening" && (
+          <p className="mt-1 text-xs text-sky-400">● hearing you…</p>
+        )}
+      </div>
 
       {!soundOn && (
         <button
@@ -115,10 +146,6 @@ function CallView({ error, onLeave }: { error: string | null; onLeave: () => voi
           🔊 Enable sound
         </button>
       )}
-
-      <p className="text-xs text-neutral-600">
-        Speak your question — e.g. &quot;How does the VLM answer questions?&quot;
-      </p>
 
       {error && <p className="text-xs text-red-400">error: {error}</p>}
 

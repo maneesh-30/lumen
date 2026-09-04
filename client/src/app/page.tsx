@@ -44,8 +44,7 @@ export default function Home() {
     return m;
   }, [resp]);
 
-  const verifyStep = resp?.trace.find((t) => t.step === "verify");
-  const verdict = verifyStep?.verdict as string | undefined;
+  const verdict = resp?.trace.find((t) => t.step === "verify")?.verdict as string | undefined;
 
   async function ask(q?: string) {
     const query = (q ?? question).trim();
@@ -91,13 +90,17 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* header */}
-        <header className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Lumen</h1>
-          <p className="text-sm text-neutral-500">
-            Ask about the codebase — grounded, cited, and independently verified.
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <header className="mb-8">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
+            <span className="text-xs font-medium uppercase tracking-widest text-muted">Lumen</span>
+          </div>
+          <h1 className="font-serif text-4xl font-medium tracking-tight">Ask your codebase.</h1>
+          <p className="mt-2 max-w-xl text-muted">
+            Grounded answers with a citation for every claim, independently verified — and an
+            honest &quot;I don&apos;t have that&quot; when there&apos;s no evidence.
           </p>
         </header>
 
@@ -108,12 +111,12 @@ export default function Home() {
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && ask()}
             placeholder="Ask a question about the codebase…"
-            className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm outline-none focus:border-neutral-600"
+            className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted focus:border-accent"
           />
           <button
             onClick={() => ask()}
             disabled={loading}
-            className="rounded-lg bg-neutral-100 px-5 py-3 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+            className="cursor-pointer rounded-xl bg-accent px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#b0512f] disabled:opacity-50"
           >
             {loading ? "Thinking…" : "Ask"}
           </button>
@@ -125,7 +128,7 @@ export default function Home() {
             <button
               key={ex}
               onClick={() => ask(ex)}
-              className="rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-200"
+              className="cursor-pointer rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted transition-colors hover:border-accent hover:text-foreground"
             >
               {ex}
             </button>
@@ -133,56 +136,42 @@ export default function Home() {
         </div>
 
         {error && (
-          <p className="mt-6 rounded-lg border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-300">
+          <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error} — is the server running on {API}?
           </p>
         )}
 
-        {/* results */}
         {resp && (
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* left: answer */}
             <section className="space-y-4">
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                    Answer
-                  </span>
+                  <span className="text-xs font-medium uppercase tracking-widest text-muted">Answer</span>
                   {resp.abstained ? (
-                    <span className="rounded-full bg-amber-950 px-2 py-0.5 text-xs text-amber-300">
-                      abstained · no evidence
-                    </span>
+                    <Badge tone="amber">abstained · no evidence</Badge>
                   ) : (
-                    <span className="rounded-full bg-emerald-950 px-2 py-0.5 text-xs text-emerald-300">
-                      ✓ verified{verdict === "revise" ? " (revised)" : ""}
-                    </span>
+                    <Badge tone="green">✓ verified{verdict === "revise" ? " (revised)" : ""}</Badge>
                   )}
                 </div>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-200">
-                  <AnswerText
-                    text={resp.answer}
-                    onCite={loadCode}
-                    activeId={activeId}
-                  />
+                <div className="text-[15px] leading-relaxed text-foreground">
+                  <AnswerText text={resp.answer} onCite={loadCode} activeId={activeId} />
                 </div>
               </div>
 
               {resp.citations.length > 0 && (
-                <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                    Sources
-                  </div>
+                <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-widest text-muted">Sources</div>
                   <ul className="space-y-1">
                     {resp.citations.map((c) => (
                       <li key={c.id}>
                         <button
                           onClick={() => loadCode(c.id)}
-                          className={`w-full rounded px-2 py-1 text-left font-mono text-xs hover:bg-neutral-800 ${
-                            activeId === c.id ? "bg-neutral-800 text-neutral-100" : "text-neutral-400"
+                          className={`w-full cursor-pointer rounded-lg px-2 py-1.5 text-left font-mono text-xs transition-colors hover:bg-surface-2 ${
+                            activeId === c.id ? "bg-surface-2 text-foreground" : "text-muted"
                           }`}
                         >
-                          <span className="text-emerald-400">[{c.id}]</span> {c.file}:
-                          {c.start_line}-{c.end_line}
+                          <span className="text-accent">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
                         </button>
                       </li>
                     ))}
@@ -193,52 +182,39 @@ export default function Home() {
 
             {/* right: trace + code */}
             <section className="space-y-4">
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                <div className="mb-3 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Trace
-                </div>
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                <div className="mb-3 text-xs font-medium uppercase tracking-widest text-muted">Trace</div>
                 <ol className="space-y-2">
                   {resp.trace.map((t, i) => (
                     <li key={i} className="flex items-center gap-3 font-mono text-xs">
-                      <span className="w-16 text-neutral-500">{String(t.step)}</span>
-                      <span className="flex-1 text-neutral-300">
-                        {formatTrace(t)}
-                      </span>
-                      {typeof t.ms === "number" && (
-                        <span className="text-neutral-500">{t.ms as number}ms</span>
-                      )}
+                      <span className="w-16 text-muted">{String(t.step)}</span>
+                      <span className="flex-1 text-foreground/80">{formatTrace(t)}</span>
+                      {typeof t.ms === "number" && <span className="text-muted">{t.ms as number}ms</span>}
                     </li>
                   ))}
                 </ol>
               </div>
 
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                <div className="mb-3 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Code {code && <span className="text-neutral-600">· {code.path}</span>}
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                <div className="mb-3 text-xs font-medium uppercase tracking-widest text-muted">
+                  Code {code && <span className="text-foreground/40">· {code.path}</span>}
                 </div>
                 {codeLoading ? (
-                  <p className="text-xs text-neutral-500">loading…</p>
+                  <p className="text-xs text-muted">loading…</p>
                 ) : code ? (
-                  <pre className="overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-relaxed">
+                  <pre className="overflow-x-auto rounded-xl bg-surface-2 p-3 text-xs leading-relaxed">
                     {code.lines.map((l) => {
                       const hot = l.n >= code.start && l.n <= code.end;
                       return (
-                        <div
-                          key={l.n}
-                          className={hot ? "bg-emerald-950/40" : ""}
-                        >
-                          <span className="mr-3 inline-block w-8 select-none text-right text-neutral-600">
-                            {l.n}
-                          </span>
-                          <span className="text-neutral-300">{l.text || " "}</span>
+                        <div key={l.n} className={hot ? "bg-accent-soft" : ""}>
+                          <span className="mr-3 inline-block w-8 select-none text-right text-muted">{l.n}</span>
+                          <span className="text-foreground/90">{l.text || " "}</span>
                         </div>
                       );
                     })}
                   </pre>
                 ) : (
-                  <p className="text-xs text-neutral-600">
-                    Click a citation to see the source.
-                  </p>
+                  <p className="text-xs text-muted">Click a citation to see the source.</p>
                 )}
               </div>
             </section>
@@ -247,6 +223,14 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+function Badge({ tone, children }: { tone: "green" | "amber"; children: ReactNode }) {
+  const cls =
+    tone === "green"
+      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+      : "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+  return <span className={`rounded-full px-2 py-0.5 text-xs ${cls}`}>{children}</span>;
 }
 
 function AnswerText({
@@ -269,14 +253,14 @@ function AnswerText({
     const ids = m[1].match(/E\d+/g) ?? [];
     if (ids.length) {
       nodes.push(
-        <span key={k++} className="text-neutral-500">
+        <span key={k++} className="text-muted">
           [
           {ids.map((id, i) => (
             <span key={id}>
               <button
                 onClick={() => onCite(id)}
-                className={`font-medium hover:underline ${
-                  activeId === id ? "text-emerald-300" : "text-emerald-400"
+                className={`cursor-pointer font-medium hover:underline ${
+                  activeId === id ? "text-[#b0512f]" : "text-accent"
                 }`}
               >
                 {id}

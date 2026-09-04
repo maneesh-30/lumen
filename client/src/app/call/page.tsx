@@ -38,20 +38,24 @@ export default function CallPage() {
 
   if (!conn) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-neutral-950 px-6 text-neutral-100">
-        <h1 className="text-4xl font-semibold tracking-tight">Lumen — Live Call</h1>
-        <p className="max-w-md text-center text-neutral-400">
-          Join the call and ask about the codebase out loud. Lumen listens, searches, and
-          answers — grounded and verified.
+      <main className="flex min-h-screen flex-col items-center justify-center gap-5 bg-background px-6 text-foreground">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
+          <span className="text-xs font-medium uppercase tracking-widest text-muted">Lumen · Live Call</span>
+        </div>
+        <h1 className="font-serif text-4xl font-medium tracking-tight">Join the call.</h1>
+        <p className="max-w-md text-center text-muted">
+          Ask about the codebase out loud. Lumen listens, searches, and answers — grounded and
+          verified.
         </p>
         <button
           onClick={join}
           disabled={joining}
-          className="rounded-lg bg-neutral-100 px-6 py-3 font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+          className="cursor-pointer rounded-xl bg-accent px-6 py-3 font-medium text-white shadow-sm transition-colors hover:bg-[#b0512f] disabled:opacity-50"
         >
           {joining ? "Joining…" : "Join call"}
         </button>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </main>
     );
   }
@@ -64,7 +68,7 @@ export default function CallPage() {
       audio
       video={false}
       data-lk-theme="default"
-      className="h-screen bg-neutral-950 text-neutral-100"
+      className="h-screen bg-background text-foreground"
       onError={(e) => setError(e.message)}
       onDisconnected={() => setConn(null)}
     >
@@ -129,37 +133,37 @@ function Meeting() {
 
   return (
     <div className="relative flex h-screen">
-      {/* LiveKit prebuilt meeting UI (70%) */}
-      <div className="flex-1">
+      {/* LiveKit prebuilt meeting UI */}
+      <div className="flex-1 bg-neutral-950">
         <VideoConference />
       </div>
 
-      {/* floating status + view toggle + sound */}
+      {/* floating status + sound + view toggle */}
       <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${
             status === "thinking"
-              ? "bg-amber-500/20 text-amber-300"
+              ? "bg-amber-100 text-amber-800"
               : status === "live"
-                ? "bg-emerald-500/20 text-emerald-300"
-                : "bg-neutral-700 text-neutral-300"
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-neutral-200 text-neutral-700"
           }`}
         >
           {status === "thinking" ? "● Lumen thinking…" : status === "live" ? "● live" : "connecting…"}
         </span>
         <button
           onClick={enableSound}
-          className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500"
+          className="cursor-pointer rounded-full bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-[#b0512f]"
         >
           🔊 Sound
         </button>
-        <div className="flex rounded-full border border-neutral-700 bg-neutral-900/80 p-0.5 text-xs">
+        <div className="flex rounded-full border border-border bg-surface p-0.5 text-xs shadow-sm">
           {(["operator", "customer"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-full px-3 py-1 capitalize ${
-                view === v ? "bg-neutral-100 text-neutral-900" : "text-neutral-300"
+              className={`cursor-pointer rounded-full px-3 py-1 capitalize ${
+                view === v ? "bg-accent text-white" : "text-muted"
               }`}
             >
               {v}
@@ -168,24 +172,24 @@ function Meeting() {
         </div>
       </div>
 
-      {/* evidence sidebar (30%, operator only) */}
+      {/* evidence sidebar (operator only) */}
       {isOperator && (
-        <aside className="flex w-[32%] min-w-[320px] flex-col gap-3 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
+        <aside className="flex w-[32%] min-w-[320px] flex-col gap-3 overflow-y-auto border-l border-border bg-background p-4">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Evidence</div>
-            <p className="text-xs text-neutral-600">What Lumen grounded its last answer in.</p>
+            <div className="text-xs font-semibold uppercase tracking-widest text-muted">Evidence</div>
+            <p className="text-xs text-muted/80">What Lumen grounded its last answer in.</p>
           </div>
 
           <Panel title="Trace">
             {trace.length === 0 ? (
-              <p className="text-xs text-neutral-600">Runs after a question.</p>
+              <p className="text-xs text-muted">Runs after a question.</p>
             ) : (
               <ol className="space-y-1.5">
                 {trace.map((t, i) => (
                   <li key={i} className="flex items-center gap-2 font-mono text-xs">
-                    <span className="w-14 text-neutral-500">{String(t.step)}</span>
-                    <span className="flex-1 text-neutral-300">{formatTrace(t)}</span>
-                    {typeof t.ms === "number" && <span className="text-neutral-500">{t.ms as number}ms</span>}
+                    <span className="w-14 text-muted">{String(t.step)}</span>
+                    <span className="flex-1 text-foreground/80">{formatTrace(t)}</span>
+                    {typeof t.ms === "number" && <span className="text-muted">{t.ms as number}ms</span>}
                   </li>
                 ))}
               </ol>
@@ -194,18 +198,18 @@ function Meeting() {
 
           <Panel title="Sources">
             {citations.length === 0 ? (
-              <p className="text-xs text-neutral-600">Citations appear here.</p>
+              <p className="text-xs text-muted">Citations appear here.</p>
             ) : (
               <ul className="space-y-1">
                 {citations.map((c) => (
                   <li key={c.id}>
                     <button
                       onClick={() => loadCode(c.id)}
-                      className={`w-full rounded px-2 py-1 text-left font-mono text-xs hover:bg-neutral-800 ${
-                        activeId === c.id ? "bg-neutral-800 text-neutral-100" : "text-neutral-400"
+                      className={`w-full cursor-pointer rounded-lg px-2 py-1 text-left font-mono text-xs transition-colors hover:bg-surface-2 ${
+                        activeId === c.id ? "bg-surface-2 text-foreground" : "text-muted"
                       }`}
                     >
-                      <span className="text-emerald-400">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
+                      <span className="text-accent">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
                     </button>
                   </li>
                 ))}
@@ -215,19 +219,19 @@ function Meeting() {
 
           <Panel title={`Code${code ? ` · ${code.path}` : ""}`} grow>
             {code ? (
-              <pre className="overflow-x-auto rounded-lg bg-neutral-900 p-3 text-xs leading-relaxed">
+              <pre className="overflow-x-auto rounded-lg bg-surface-2 p-3 text-xs leading-relaxed">
                 {code.lines.map((l) => {
                   const hot = l.n >= code.start && l.n <= code.end;
                   return (
-                    <div key={l.n} className={hot ? "bg-emerald-950/40" : ""}>
-                      <span className="mr-3 inline-block w-8 select-none text-right text-neutral-600">{l.n}</span>
-                      <span className="text-neutral-300">{l.text || " "}</span>
+                    <div key={l.n} className={hot ? "bg-accent-soft" : ""}>
+                      <span className="mr-3 inline-block w-8 select-none text-right text-muted">{l.n}</span>
+                      <span className="text-foreground/90">{l.text || " "}</span>
                     </div>
                   );
                 })}
               </pre>
             ) : (
-              <p className="text-xs text-neutral-600">Click a citation to see the source.</p>
+              <p className="text-xs text-muted">Click a citation to see the source.</p>
             )}
           </Panel>
         </aside>
@@ -238,8 +242,8 @@ function Meeting() {
 
 function Panel({ title, grow, children }: { title: string; grow?: boolean; children: ReactNode }) {
   return (
-    <div className={`rounded-xl border border-neutral-800 bg-neutral-900/50 p-3 ${grow ? "flex-1" : ""}`}>
-      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{title}</div>
+    <div className={`rounded-xl border border-border bg-surface p-3 shadow-sm ${grow ? "flex-1" : ""}`}>
+      <div className="mb-2 text-xs font-medium uppercase tracking-widest text-muted">{title}</div>
       {children}
     </div>
   );

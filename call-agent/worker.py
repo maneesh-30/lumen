@@ -50,7 +50,7 @@ def _text_of(msg) -> str:
 async def _ask_brain(question: str) -> dict:
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(
-            f"{BRAIN_API_URL}/api/agent/ask", json={"question": question}
+            f"{BRAIN_API_URL}/api/agent/ask", json={"question": question, "verify": False}
         )
         return r.json()
 

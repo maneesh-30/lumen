@@ -27,7 +27,7 @@ def _citations(text: str, evidence: list[dict]) -> list[dict]:
     return [e for e in evidence if e["id"] in ids]
 
 
-def answer(question: str, workspace_id: str = "demo", limit: int = 6) -> dict:
+def answer(question: str, workspace_id: str = "demo", limit: int = 6, run_verify: bool = True) -> dict:
     trace: list[dict] = []
 
     # ---- retrieve ----
@@ -67,21 +67,25 @@ def answer(question: str, workspace_id: str = "demo", limit: int = 6) -> dict:
         trace.append({"step": "verify", "result": "skipped (draft abstained)"})
         return {"answer": ABSTAIN, "citations": [], "trace": trace, "abstained": True}
 
-    # ---- verify (independent model) — check only the evidence the draft cited ----
-    t2 = time.perf_counter()
-    draft_cited = _citations(draft, evidence) or evidence
-    v = verify(question, draft, draft_cited)
-    verdict = v["verdict"]
-    if verdict == "abstain":
-        final = ABSTAIN
-    elif verdict == "revise":
-        final = (v["verified_answer"] or draft).strip()
-    else:  # "pass" (or unverified fallback)
+    if run_verify:
+        # ---- verify (independent model) — check only the evidence the draft cited ----
+        t2 = time.perf_counter()
+        draft_cited = _citations(draft, evidence) or evidence
+        v = verify(question, draft, draft_cited)
+        verdict = v["verdict"]
+        if verdict == "abstain":
+            final = ABSTAIN
+        elif verdict == "revise":
+            final = (v["verified_answer"] or draft).strip()
+        else:  # "pass" (or unverified fallback)
+            final = draft
+        trace.append({
+            "step": "verify", "provider": v["provider"], "verdict": verdict,
+            "verifier_ok": v["verifier_ok"], "ms": int((time.perf_counter() - t2) * 1000),
+        })
+    else:
         final = draft
-    trace.append({
-        "step": "verify", "provider": v["provider"], "verdict": verdict,
-        "verifier_ok": v["verifier_ok"], "ms": int((time.perf_counter() - t2) * 1000),
-    })
+        trace.append({"step": "verify", "result": "skipped (fast mode)"})
 
     cited = _citations(final, evidence)
     abstained = final.lower().startswith("i don't have")

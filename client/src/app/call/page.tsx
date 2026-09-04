@@ -130,14 +130,13 @@ function Meeting() {
   }
 
   return (
-    <div className="relative flex h-screen">
+    <div className="flex h-screen">
       {/* LiveKit prebuilt meeting UI (70%) */}
-      <div className="flex-1">
+      <div className="relative flex-1">
         <VideoConference />
-      </div>
 
-      {/* floating status + view toggle + sound */}
-      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+        {/* floating status + view toggle + sound — anchored to the video pane, clear of the sidebar */}
+        <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${
             status === "thinking"
@@ -167,6 +166,7 @@ function Meeting() {
               {v}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

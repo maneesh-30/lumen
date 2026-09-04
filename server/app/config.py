@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     featherless_api_key: str = ""
     featherless_base_url: str = "https://api.featherless.ai/v1"
     verify_provider: str = "featherless"
-    verify_model: str = "Qwen/Qwen3-8B"
+    verify_model: str = "Qwen/Qwen2.5-7B-Instruct"
 
     # github
     github_token: str = ""

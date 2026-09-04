@@ -11,16 +11,16 @@ import {
   useRoomContext,
   useVoiceAssistant,
 } from "@livekit/components-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 const API = process.env.NEXT_PUBLIC_BRAIN_API_URL ?? "http://localhost:8000";
 
 type Citation = { id: string; repo: string | null; file: string; start_line: number; end_line: number };
 type TraceStep = Record<string, unknown>;
-type Caption = { role: "you" | "lumen"; text: string };
 type CodeLine = { n: number; text: string };
 type CodeResp = { repo: string; path: string; start: number; end: number; lines: CodeLine[] };
 type Conn = { token: string; url: string };
+type Phase = "connecting" | "listening" | "thinking" | "answering";
 
 export default function CallPage() {
   const [conn, setConn] = useState<Conn | null>(null);
@@ -68,7 +68,7 @@ export default function CallPage() {
       audio
       video={false}
       data-lk-theme="default"
-      className="min-h-screen bg-neutral-950 text-neutral-100"
+      className="h-screen bg-neutral-950 text-neutral-100"
       onError={(e) => setError(e.message)}
     >
       <RoomAudioRenderer />
@@ -85,26 +85,25 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
   const userSpeaking = useIsSpeaking(localParticipant);
 
   const [view, setView] = useState<"operator" | "customer">("operator");
-  const [captions, setCaptions] = useState<Caption[]>([]);
   const [citations, setCitations] = useState<Citation[]>([]);
   const [trace, setTrace] = useState<TraceStep[]>([]);
   const [thinking, setThinking] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [code, setCode] = useState<CodeResp | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // receive the worker's data messages
   useDataChannel("lumen", (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload));
       if (data.type === "thinking") {
         setThinking(true);
-        setCaptions((c) => [...c, { role: "you" as const, text: data.question }].slice(-8));
       } else if (data.type === "answer") {
         setThinking(false);
         setCitations(data.citations ?? []);
         setTrace(data.trace ?? []);
-        setCaptions((c) => [...c, { role: "lumen" as const, text: data.answer ?? "" }].slice(-8));
+        setCode(null);
+        setActiveId(null);
       }
     } catch {
       /* ignore */
@@ -112,7 +111,7 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
   });
 
   const connected = roomState === "connected";
-  const phase: "connecting" | "listening" | "thinking" | "answering" = !connected
+  const phase: Phase = !connected
     ? "connecting"
     : state === "speaking"
       ? "answering"
@@ -126,6 +125,15 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
     try {
       await room.startAudio();
       setSoundOn(true);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function toggleMic() {
+    try {
+      await localParticipant.setMicrophoneEnabled(!micOn);
+      setMicOn(!micOn);
     } catch {
       /* ignore */
     }
@@ -147,20 +155,49 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-5">
-      {/* header */}
-      <header className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Lumen</h1>
-          <p className="text-xs text-neutral-500">Live call · room lumen-demo</p>
+    <div className="flex h-screen">
+      {/* meeting area (70%) */}
+      <main className="flex flex-1 flex-col bg-neutral-900">
+        <div className="flex flex-1 items-center justify-center gap-6 p-6">
+          <Tile name="You" active={userSpeaking} muted={!micOn} accent="sky">
+            <span className="text-5xl font-semibold text-neutral-300">Y</span>
+          </Tile>
+          <Tile
+            name="Lumen"
+            active={phase === "answering"}
+            sublabel={
+              phase === "answering" ? "Speaking…" : phase === "thinking" ? "Thinking…" : "Listening"
+            }
+            accent={phase === "answering" ? "emerald" : phase === "thinking" ? "amber" : "sky"}
+          >
+            <LumenOrb phase={phase} />
+          </Tile>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-full border border-neutral-800 p-0.5 text-xs">
+
+        {/* control bar */}
+        <div className="flex items-center justify-center gap-3 border-t border-neutral-800 bg-neutral-950/60 px-6 py-4">
+          <button
+            onClick={toggleMic}
+            className={`rounded-full px-5 py-2.5 text-sm font-medium ${
+              micOn ? "bg-neutral-800 text-neutral-100 hover:bg-neutral-700" : "bg-red-600 text-white"
+            }`}
+          >
+            {micOn ? "🎤 Mic on" : "🔇 Muted"}
+          </button>
+          {!soundOn && (
+            <button
+              onClick={enableSound}
+              className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500"
+            >
+              🔊 Enable sound
+            </button>
+          )}
+          <div className="flex rounded-full border border-neutral-700 p-0.5 text-xs">
             {(["operator", "customer"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`rounded-full px-3 py-1 capitalize ${
+                className={`rounded-full px-3 py-1.5 capitalize ${
                   view === v ? "bg-neutral-100 text-neutral-900" : "text-neutral-400"
                 }`}
               >
@@ -168,126 +205,121 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
               </button>
             ))}
           </div>
-          <button onClick={onLeave} className="text-xs text-neutral-500 underline hover:text-neutral-300">
+          <button
+            onClick={onLeave}
+            className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-500"
+          >
             Leave
           </button>
         </div>
-      </header>
+      </main>
 
-      <div className={`grid flex-1 gap-5 ${isOperator ? "lg:grid-cols-[1fr_1fr]" : "grid-cols-1"}`}>
-        {/* left: call + captions */}
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-900/50 py-8">
-            <Orb phase={phase} />
-            <p className="text-sm font-medium tracking-wide capitalize">
-              {phase === "listening" && userSpeaking ? "hearing you…" : phase}
-            </p>
-            {!soundOn && (
-              <button
-                onClick={enableSound}
-                className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
-              >
-                🔊 Enable sound
-              </button>
+      {/* evidence sidebar (30%, operator only) */}
+      {isOperator && (
+        <aside className="flex w-[32%] min-w-[320px] flex-col gap-4 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
+          <div>
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Evidence</div>
+            <p className="text-xs text-neutral-600">What Lumen grounded its last answer in.</p>
+          </div>
+
+          <Panel title="Trace">
+            {trace.length === 0 ? (
+              <p className="text-xs text-neutral-600">Runs after a question.</p>
+            ) : (
+              <ol className="space-y-1.5">
+                {trace.map((t, i) => (
+                  <li key={i} className="flex items-center gap-2 font-mono text-xs">
+                    <span className="w-14 text-neutral-500">{String(t.step)}</span>
+                    <span className="flex-1 text-neutral-300">{formatTrace(t)}</span>
+                    {typeof t.ms === "number" && <span className="text-neutral-500">{t.ms as number}ms</span>}
+                  </li>
+                ))}
+              </ol>
             )}
-          </div>
+          </Panel>
 
-          <div className="flex-1 rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-              Transcript
-            </div>
-            <div className="space-y-3">
-              {captions.length === 0 && (
-                <p className="text-sm text-neutral-600">Ask a question out loud to begin.</p>
-              )}
-              {captions.map((c, i) => (
-                <div key={i}>
-                  <span
-                    className={`text-xs font-medium ${
-                      c.role === "you" ? "text-sky-400" : "text-emerald-400"
-                    }`}
-                  >
-                    {c.role === "you" ? "You" : "Lumen"}
-                  </span>
-                  <p className="text-sm leading-relaxed text-neutral-200">
-                    <AnswerText text={c.text} showCites={isOperator} onCite={loadCode} activeId={activeId} />
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+          <Panel title="Sources">
+            {citations.length === 0 ? (
+              <p className="text-xs text-neutral-600">Citations appear here.</p>
+            ) : (
+              <ul className="space-y-1">
+                {citations.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      onClick={() => loadCode(c.id)}
+                      className={`w-full rounded px-2 py-1 text-left font-mono text-xs hover:bg-neutral-800 ${
+                        activeId === c.id ? "bg-neutral-800 text-neutral-100" : "text-neutral-400"
+                      }`}
+                    >
+                      <span className="text-emerald-400">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
 
-        {/* right: evidence (operator only) */}
-        {isOperator && (
-          <section className="flex flex-col gap-4">
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">Trace</div>
-              {trace.length === 0 ? (
-                <p className="text-xs text-neutral-600">The pipeline shows here after a question.</p>
-              ) : (
-                <ol className="space-y-1.5">
-                  {trace.map((t, i) => (
-                    <li key={i} className="flex items-center gap-3 font-mono text-xs">
-                      <span className="w-16 text-neutral-500">{String(t.step)}</span>
-                      <span className="flex-1 text-neutral-300">{formatTrace(t)}</span>
-                      {typeof t.ms === "number" && <span className="text-neutral-500">{t.ms as number}ms</span>}
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
+          <Panel title={`Code${code ? ` · ${code.path}` : ""}`} grow>
+            {code ? (
+              <pre className="overflow-x-auto rounded-lg bg-neutral-900 p-3 text-xs leading-relaxed">
+                {code.lines.map((l) => {
+                  const hot = l.n >= code.start && l.n <= code.end;
+                  return (
+                    <div key={l.n} className={hot ? "bg-emerald-950/40" : ""}>
+                      <span className="mr-3 inline-block w-8 select-none text-right text-neutral-600">{l.n}</span>
+                      <span className="text-neutral-300">{l.text || " "}</span>
+                    </div>
+                  );
+                })}
+              </pre>
+            ) : (
+              <p className="text-xs text-neutral-600">Click a citation to see the source.</p>
+            )}
+          </Panel>
+        </aside>
+      )}
+    </div>
+  );
+}
 
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">Sources</div>
-              {citations.length === 0 ? (
-                <p className="text-xs text-neutral-600">Citations appear here.</p>
-              ) : (
-                <ul className="space-y-1">
-                  {citations.map((c) => (
-                    <li key={c.id}>
-                      <button
-                        onClick={() => loadCode(c.id)}
-                        className={`w-full rounded px-2 py-1 text-left font-mono text-xs hover:bg-neutral-800 ${
-                          activeId === c.id ? "bg-neutral-800 text-neutral-100" : "text-neutral-400"
-                        }`}
-                      >
-                        <span className="text-emerald-400">[{c.id}]</span> {c.file}:{c.start_line}-{c.end_line}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="flex-1 rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                Code {code && <span className="text-neutral-600">· {code.path}</span>}
-              </div>
-              {code ? (
-                <pre className="overflow-x-auto rounded-lg bg-neutral-950 p-3 text-xs leading-relaxed">
-                  {code.lines.map((l) => {
-                    const hot = l.n >= code.start && l.n <= code.end;
-                    return (
-                      <div key={l.n} className={hot ? "bg-emerald-950/40" : ""}>
-                        <span className="mr-3 inline-block w-8 select-none text-right text-neutral-600">{l.n}</span>
-                        <span className="text-neutral-300">{l.text || " "}</span>
-                      </div>
-                    );
-                  })}
-                </pre>
-              ) : (
-                <p className="text-xs text-neutral-600">Click a citation to see the source.</p>
-              )}
-            </div>
-          </section>
-        )}
+function Tile({
+  name,
+  active,
+  muted,
+  sublabel,
+  accent,
+  children,
+}: {
+  name: string;
+  active: boolean;
+  muted?: boolean;
+  sublabel?: string;
+  accent: "sky" | "emerald" | "amber";
+  children: ReactNode;
+}) {
+  const ring =
+    active && accent === "emerald"
+      ? "ring-2 ring-emerald-500"
+      : active && accent === "amber"
+        ? "ring-2 ring-amber-500"
+        : active
+          ? "ring-2 ring-sky-500"
+          : "ring-1 ring-neutral-800";
+  return (
+    <div
+      className={`relative flex aspect-video w-full max-w-md flex-col items-center justify-center rounded-2xl bg-neutral-800 ${ring}`}
+    >
+      {children}
+      <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-md bg-black/40 px-2 py-1 text-xs">
+        <span className="font-medium text-neutral-200">{name}</span>
+        {muted && <span className="text-red-400">🔇</span>}
+        {sublabel && <span className="text-neutral-400">· {sublabel}</span>}
       </div>
     </div>
   );
 }
 
-function Orb({ phase }: { phase: "connecting" | "listening" | "thinking" | "answering" }) {
+function LumenOrb({ phase }: { phase: Phase }) {
   const color =
     phase === "answering"
       ? "bg-emerald-500"
@@ -301,65 +333,24 @@ function Orb({ phase }: { phase: "connecting" | "listening" | "thinking" | "answ
       ? "animate-ping bg-emerald-500/50"
       : phase === "thinking"
         ? "animate-ping bg-amber-500/40"
-        : phase === "listening"
-          ? "animate-ping bg-sky-500/40"
-          : "";
+        : "";
   return (
     <div className="relative flex h-24 w-24 items-center justify-center">
       {ring && <span className={`absolute inline-flex h-full w-full rounded-full ${ring}`} />}
-      <span className={`relative inline-flex h-16 w-16 rounded-full ${color}`} />
+      <span className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full ${color}`}>
+        <span className="text-2xl font-bold text-white">L</span>
+      </span>
     </div>
   );
 }
 
-function AnswerText({
-  text,
-  showCites,
-  onCite,
-  activeId,
-}: {
-  text: string;
-  showCites: boolean;
-  onCite: (id: string) => void;
-  activeId: string | null;
-}) {
-  const clean = text.replace(/\*\*/g, "");
-  if (!showCites) {
-    return <>{clean.replace(/\s*\[[^\]]*\]/g, "")}</>;
-  }
-  const nodes: ReactNode[] = [];
-  const regex = /\[([^\]]+)\]/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  let k = 0;
-  while ((m = regex.exec(clean)) !== null) {
-    if (m.index > last) nodes.push(<span key={k++}>{clean.slice(last, m.index)}</span>);
-    const ids = m[1].match(/E\d+/g) ?? [];
-    if (ids.length) {
-      nodes.push(
-        <span key={k++} className="text-neutral-500">
-          [
-          {ids.map((id, i) => (
-            <span key={id}>
-              <button
-                onClick={() => onCite(id)}
-                className={`font-medium hover:underline ${activeId === id ? "text-emerald-300" : "text-emerald-400"}`}
-              >
-                {id}
-              </button>
-              {i < ids.length - 1 ? ", " : ""}
-            </span>
-          ))}
-          ]
-        </span>,
-      );
-    } else {
-      nodes.push(<span key={k++}>{m[0]}</span>);
-    }
-    last = regex.lastIndex;
-  }
-  if (last < clean.length) nodes.push(<span key={k++}>{clean.slice(last)}</span>);
-  return <>{nodes}</>;
+function Panel({ title, grow, children }: { title: string; grow?: boolean; children: ReactNode }) {
+  return (
+    <div className={`rounded-xl border border-neutral-800 bg-neutral-900/50 p-3 ${grow ? "flex-1" : ""}`}>
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{title}</div>
+      {children}
+    </div>
+  );
 }
 
 function formatTrace(t: TraceStep): string {

@@ -5,6 +5,8 @@ import {
   BarVisualizer,
   LiveKitRoom,
   RoomAudioRenderer,
+  StartAudio,
+  useConnectionState,
   useVoiceAssistant,
 } from "@livekit/components-react";
 import { useState } from "react";
@@ -58,25 +60,43 @@ export default function CallPage() {
       video={false}
       data-lk-theme="default"
       className="min-h-screen bg-neutral-950 text-neutral-100"
+      onError={(e) => {
+        console.error("LiveKit error:", e);
+        setError(e.message);
+      }}
+      onDisconnected={() => console.log("LiveKit disconnected")}
     >
       <RoomAudioRenderer />
-      <CallView />
+      <CallView error={error} />
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
+        <StartAudio
+          label="🔊 Click to enable sound"
+          className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-medium text-white"
+        />
+      </div>
     </LiveKitRoom>
   );
 }
 
-function CallView() {
+function CallView({ error }: { error: string | null }) {
+  const roomState = useConnectionState();
   const { state, audioTrack } = useVoiceAssistant();
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6">
       <h1 className="text-3xl font-semibold tracking-tight">Lumen</h1>
       <div className="h-40 w-80">
         <BarVisualizer state={state} barCount={7} trackRef={audioTrack} />
       </div>
-      <p className="text-sm uppercase tracking-widest text-neutral-400">{state}</p>
-      <p className="text-xs text-neutral-600">
-        Speak your question — e.g. &quot;How does the VLM answer questions?&quot;
-      </p>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <p className="text-sm uppercase tracking-widest text-neutral-300">
+          room: {roomState} · agent: {state}
+        </p>
+        <p className="text-xs text-neutral-600">
+          Speak your question — e.g. &quot;How does the VLM answer questions?&quot;
+        </p>
+        {error && <p className="text-xs text-red-400">error: {error}</p>}
+      </div>
     </div>
   );
 }

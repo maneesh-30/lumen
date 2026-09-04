@@ -40,3 +40,9 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* LiveKit control bar: hide only the camera control (audio-only calls). Native mic stays. */
+.lk-control-bar .lk-button-group:has([data-lk-source="camera"]),
+.lk-control-bar [data-lk-source="camera"] {
+  display: none !important;
+}

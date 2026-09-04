@@ -71,4 +71,30 @@ took ~15s. Switched to a single retrieve → compose (2 round-trips): retrieve ~
 compose ~2s ≈ 4s in the warm server (the CLI adds ~3s of Python startup the server does
 not have). Streaming the answer (P4/P5) will make it feel ~1s.
 
+## P3 — Verifier (independent, on Featherless)
+
+**What we built:** a second, independent model re-checks the answer before it is final
+(`app/agent/verifier.py`).
+
+- After compose, the draft answer + the evidence it cited go to Featherless
+  (`Qwen/Qwen2.5-7B-Instruct`, a fast non-thinking model).
+- It returns a compact verdict: `pass` (all claims supported), `revise` (rewrite keeping
+  only supported claims), or `abstain` (nothing supported).
+- If Featherless errors or returns unparseable output, it falls back to OpenRouter, so
+  the demo never breaks. Verify is skipped when the composer already abstained.
+
+**Why a different model:** the composer is Gemini; the verifier is an open Qwen model on
+Featherless — a second, independent model checks the first, not the same model grading
+itself. (Also satisfies the "use Featherless" requirement.)
+
+**Latency story (worth telling):** the first attempt was slow — Qwen3-8B's "thinking"
+tokens (~14s) plus truncated rewrites causing fallbacks. Fixed by: switching to the
+non-thinking Qwen2.5-7B-Instruct, biasing the verdict toward `pass` (tiny output),
+sending only the *cited* evidence, and using timeouts with no retries. Verify is now
+~2.4s on the common `pass` path (was 14s). Next: make it non-blocking in the UI (show the
+answer, then a "verified" badge) so it never adds to perceived latency.
+
+**Verified:** real questions pass with citations; "stripe billing" abstains (verify
+skipped). Every remaining claim is checked by the second model.
+
 

@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "LiveKit env not configured" }, { status: 500 });
   }
 
-  const at = new AccessToken(apiKey, apiSecret, { identity });
+  const at = new AccessToken(apiKey, apiSecret, { identity, name: "You" });
   at.addGrant({ roomJoin: true, room, canPublish: true, canSubscribe: true });
   const token = await at.toJwt();
   return NextResponse.json({ token, url });

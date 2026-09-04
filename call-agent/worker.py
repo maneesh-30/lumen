@@ -108,6 +108,10 @@ class LumenAgent(Agent):
 
 async def entrypoint(ctx: JobContext) -> None:
     await ctx.connect()
+    try:
+        await ctx.room.local_participant.set_name("Lumen")
+    except Exception:
+        pass
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         tts=deepgram.TTS(model="aura-2-thalia-en"),

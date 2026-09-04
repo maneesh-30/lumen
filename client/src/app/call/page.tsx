@@ -3,13 +3,10 @@
 import "@livekit/components-styles";
 import {
   LiveKitRoom,
-  RoomAudioRenderer,
+  VideoConference,
   useConnectionState,
   useDataChannel,
-  useIsSpeaking,
-  useLocalParticipant,
   useRoomContext,
-  useVoiceAssistant,
 } from "@livekit/components-react";
 import { useState, type ReactNode } from "react";
 
@@ -20,7 +17,6 @@ type TraceStep = Record<string, unknown>;
 type CodeLine = { n: number; text: string };
 type CodeResp = { repo: string; path: string; start: number; end: number; lines: CodeLine[] };
 type Conn = { token: string; url: string };
-type Phase = "connecting" | "listening" | "thinking" | "answering";
 
 export default function CallPage() {
   const [conn, setConn] = useState<Conn | null>(null);
@@ -70,26 +66,21 @@ export default function CallPage() {
       data-lk-theme="default"
       className="h-screen bg-neutral-950 text-neutral-100"
       onError={(e) => setError(e.message)}
+      onDisconnected={() => setConn(null)}
     >
-      <RoomAudioRenderer />
-      <Meeting onLeave={() => setConn(null)} />
+      <Meeting />
     </LiveKitRoom>
   );
 }
 
-function Meeting({ onLeave }: { onLeave: () => void }) {
+function Meeting() {
   const room = useRoomContext();
   const roomState = useConnectionState();
-  const { state } = useVoiceAssistant();
-  const { localParticipant } = useLocalParticipant();
-  const userSpeaking = useIsSpeaking(localParticipant);
 
   const [view, setView] = useState<"operator" | "customer">("operator");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [trace, setTrace] = useState<TraceStep[]>([]);
   const [thinking, setThinking] = useState(false);
-  const [soundOn, setSoundOn] = useState(false);
-  const [micOn, setMicOn] = useState(true);
   const [code, setCode] = useState<CodeResp | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -110,30 +101,12 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
     }
   });
 
-  const connected = roomState === "connected";
-  const phase: Phase = !connected
-    ? "connecting"
-    : state === "speaking"
-      ? "answering"
-      : thinking
-        ? "thinking"
-        : "listening";
-
   const isOperator = view === "operator";
+  const status = roomState !== "connected" ? "connecting" : thinking ? "thinking" : "live";
 
   async function enableSound() {
     try {
       await room.startAudio();
-      setSoundOn(true);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function toggleMic() {
-    try {
-      await localParticipant.setMicrophoneEnabled(!micOn);
-      setMicOn(!micOn);
     } catch {
       /* ignore */
     }
@@ -155,70 +128,51 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
   }
 
   return (
-    <div className="flex h-screen">
-      {/* meeting area (70%) */}
-      <main className="flex flex-1 flex-col bg-neutral-900">
-        <div className="flex flex-1 items-center justify-center gap-6 p-6">
-          <Tile name="You" active={userSpeaking} muted={!micOn} accent="sky">
-            <span className="text-5xl font-semibold text-neutral-300">Y</span>
-          </Tile>
-          <Tile
-            name="Lumen"
-            active={phase === "answering"}
-            sublabel={
-              phase === "answering" ? "Speaking…" : phase === "thinking" ? "Thinking…" : "Listening"
-            }
-            accent={phase === "answering" ? "emerald" : phase === "thinking" ? "amber" : "sky"}
-          >
-            <LumenOrb phase={phase} />
-          </Tile>
-        </div>
+    <div className="relative flex h-screen">
+      {/* LiveKit prebuilt meeting UI (70%) */}
+      <div className="flex-1">
+        <VideoConference />
+      </div>
 
-        {/* control bar */}
-        <div className="flex items-center justify-center gap-3 border-t border-neutral-800 bg-neutral-950/60 px-6 py-4">
-          <button
-            onClick={toggleMic}
-            className={`rounded-full px-5 py-2.5 text-sm font-medium ${
-              micOn ? "bg-neutral-800 text-neutral-100 hover:bg-neutral-700" : "bg-red-600 text-white"
-            }`}
-          >
-            {micOn ? "🎤 Mic on" : "🔇 Muted"}
-          </button>
-          {!soundOn && (
+      {/* floating status + view toggle + sound */}
+      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            status === "thinking"
+              ? "bg-amber-500/20 text-amber-300"
+              : status === "live"
+                ? "bg-emerald-500/20 text-emerald-300"
+                : "bg-neutral-700 text-neutral-300"
+          }`}
+        >
+          {status === "thinking" ? "● Lumen thinking…" : status === "live" ? "● live" : "connecting…"}
+        </span>
+        <button
+          onClick={enableSound}
+          className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500"
+        >
+          🔊 Sound
+        </button>
+        <div className="flex rounded-full border border-neutral-700 bg-neutral-900/80 p-0.5 text-xs">
+          {(["operator", "customer"] as const).map((v) => (
             <button
-              onClick={enableSound}
-              className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500"
+              key={v}
+              onClick={() => setView(v)}
+              className={`rounded-full px-3 py-1 capitalize ${
+                view === v ? "bg-neutral-100 text-neutral-900" : "text-neutral-300"
+              }`}
             >
-              🔊 Enable sound
+              {v}
             </button>
-          )}
-          <div className="flex rounded-full border border-neutral-700 p-0.5 text-xs">
-            {(["operator", "customer"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`rounded-full px-3 py-1.5 capitalize ${
-                  view === v ? "bg-neutral-100 text-neutral-900" : "text-neutral-400"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={onLeave}
-            className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-500"
-          >
-            Leave
-          </button>
+          ))}
         </div>
-      </main>
+      </div>
 
       {/* evidence sidebar (30%, operator only) */}
       {isOperator && (
-        <aside className="flex w-[32%] min-w-[320px] flex-col gap-4 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
+        <aside className="flex w-[32%] min-w-[320px] flex-col gap-3 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
           <div>
-            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Evidence</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Evidence</div>
             <p className="text-xs text-neutral-600">What Lumen grounded its last answer in.</p>
           </div>
 
@@ -278,68 +232,6 @@ function Meeting({ onLeave }: { onLeave: () => void }) {
           </Panel>
         </aside>
       )}
-    </div>
-  );
-}
-
-function Tile({
-  name,
-  active,
-  muted,
-  sublabel,
-  accent,
-  children,
-}: {
-  name: string;
-  active: boolean;
-  muted?: boolean;
-  sublabel?: string;
-  accent: "sky" | "emerald" | "amber";
-  children: ReactNode;
-}) {
-  const ring =
-    active && accent === "emerald"
-      ? "ring-2 ring-emerald-500"
-      : active && accent === "amber"
-        ? "ring-2 ring-amber-500"
-        : active
-          ? "ring-2 ring-sky-500"
-          : "ring-1 ring-neutral-800";
-  return (
-    <div
-      className={`relative flex aspect-video w-full max-w-md flex-col items-center justify-center rounded-2xl bg-neutral-800 ${ring}`}
-    >
-      {children}
-      <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-md bg-black/40 px-2 py-1 text-xs">
-        <span className="font-medium text-neutral-200">{name}</span>
-        {muted && <span className="text-red-400">🔇</span>}
-        {sublabel && <span className="text-neutral-400">· {sublabel}</span>}
-      </div>
-    </div>
-  );
-}
-
-function LumenOrb({ phase }: { phase: Phase }) {
-  const color =
-    phase === "answering"
-      ? "bg-emerald-500"
-      : phase === "thinking"
-        ? "bg-amber-500"
-        : phase === "listening"
-          ? "bg-sky-500"
-          : "bg-neutral-600";
-  const ring =
-    phase === "answering"
-      ? "animate-ping bg-emerald-500/50"
-      : phase === "thinking"
-        ? "animate-ping bg-amber-500/40"
-        : "";
-  return (
-    <div className="relative flex h-24 w-24 items-center justify-center">
-      {ring && <span className={`absolute inline-flex h-full w-full rounded-full ${ring}`} />}
-      <span className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full ${color}`}>
-        <span className="text-2xl font-bold text-white">L</span>
-      </span>
     </div>
   );
 }

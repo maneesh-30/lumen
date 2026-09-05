@@ -53,7 +53,7 @@ export default function CallPage() {
           }}
         />
         <div
-          className="pointer-events-none absolute inset-0 animate-[lumen-twinkle_10s_ease-in-out_infinite]"
+          className="pointer-events-none absolute inset-0 opacity-70"
           style={{
             backgroundImage: "radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1.6px)",
             backgroundSize: "260px 260px",
@@ -68,7 +68,7 @@ export default function CallPage() {
 
         {/* the light — glowing planet horizon */}
         <div
-          className="pointer-events-none absolute left-1/2 top-[70%] h-[200vmax] w-[200vmax] -translate-x-1/2 animate-[lumen-glow_11s_ease-in-out_infinite] rounded-full bg-[#04060c]"
+          className="pointer-events-none absolute left-1/2 top-[70%] h-[200vmax] w-[200vmax] -translate-x-1/2 rounded-full bg-[#04060c]"
           style={{
             boxShadow:
               "0 -2px 0 rgba(186,230,253,0.95), 0 -18px 40px rgba(56,189,248,0.55), 0 -60px 140px rgba(56,189,248,0.35), 0 -140px 320px rgba(14,165,233,0.22)",

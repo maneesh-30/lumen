@@ -53,15 +53,15 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes lumen-twinkle {
-  0%, 100% { opacity: 0.25; }
-  50%      { opacity: 0.9; }
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.8; }
 }
 @keyframes lumen-drift {
   from { background-position: 0 0, 60px 40px; }
   to   { background-position: -440px 220px, 380px -190px; }
 }
 @keyframes lumen-glow {
-  0%, 100% { opacity: 0.8; }
+  0%, 100% { opacity: 0.92; }
   50%      { opacity: 1; }
 }
 @keyframes lumen-orbit {

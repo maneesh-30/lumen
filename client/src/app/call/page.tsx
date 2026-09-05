@@ -22,13 +22,14 @@ export default function CallPage() {
   const [conn, setConn] = useState<Conn | null>(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lang, setLang] = useState<"en" | "te">("en");
 
   async function join() {
     setJoining(true);
     setError(null);
     try {
       // unique room per join — a reused room keeps the old draining agent and no new one is dispatched
-      const room = `lumen-${Math.random().toString(36).slice(2, 8)}`;
+      const room = `lumen-${lang}-${Math.random().toString(36).slice(2, 6)}`;
       const r = await fetch(`/api/livekit-token?room=${room}`);
       if (!r.ok) throw new Error(`token ${r.status}`);
       setConn(await r.json());
@@ -93,10 +94,26 @@ export default function CallPage() {
             Every claim cited to real code and independently verified — or it says it
             doesn&apos;t know.
           </p>
+          <div className="mt-9 flex animate-[lumen-rise_0.9s_ease-out_both] items-center gap-2 [animation-delay:320ms]">
+            <span className="mr-1 text-[11px] uppercase tracking-[0.3em] text-[#6f869c]">Answer in</span>
+            {([["en", "English"], ["te", "తెలుగు"]] as const).map(([code, label]) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                className={`rounded-full border px-5 py-2 text-xs uppercase tracking-[0.15em] transition-colors ${
+                  lang === code
+                    ? "border-cyan-300 bg-cyan-300/15 text-cyan-200"
+                    : "border-white/15 text-[#9fb7cc] hover:border-white/40"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={join}
             disabled={joining}
-            className="mt-10 animate-[lumen-rise_0.9s_ease-out_both] rounded-full bg-cyan-300 px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#04060c] shadow-[0_0_30px_rgba(34,211,238,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_0_56px_rgba(34,211,238,0.85)] disabled:opacity-50 [animation-delay:400ms]"
+            className="mt-6 animate-[lumen-rise_0.9s_ease-out_both] rounded-full bg-cyan-300 px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#04060c] shadow-[0_0_30px_rgba(34,211,238,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_0_56px_rgba(34,211,238,0.85)] disabled:opacity-50 [animation-delay:400ms]"
           >
             {joining ? "Joining…" : "Join the call"}
           </button>

@@ -35,12 +35,31 @@ SARVAM_TTS_SPEAKER = os.getenv("SARVAM_TTS_SPEAKER", "anushka")
 logger = logging.getLogger("lumen-agent")
 
 
-def _build_stt_tts():
-    """Pick the voice stack — Deepgram (English) or Sarvam (Indian languages)."""
-    if VOICE_STACK == "sarvam":
+# language code (from the room name) -> Sarvam locale + speaker
+SARVAM_LOCALE = {"te": ("te-IN", "priya"), "hi": ("hi-IN", "priya")}
+
+GREETINGS = {
+    "en": "Hi, I'm Lumen. Ask me anything about the codebase.",
+    "te": "నమస్తే, నేను Lumen. కోడ్‌బేస్ గురించి ఏదైనా అడగండి.",
+    "hi": "नमस्ते, मैं Lumen हूँ। कोडबेस के बारे में कुछ भी पूछिए।",
+}
+
+
+def _lang_from_room(name: str) -> str:
+    """Room names are 'lumen-<lang>-<rand>', e.g. 'lumen-te-ab12'."""
+    parts = (name or "").split("-")
+    if len(parts) >= 2 and parts[1] in ("en", "te", "hi"):
+        return parts[1]
+    return "en"
+
+
+def _build_stt_tts(lang: str):
+    """English -> Deepgram; Indian languages -> Sarvam."""
+    if lang in SARVAM_LOCALE:
+        locale, speaker = SARVAM_LOCALE[lang]
         return (
-            sarvam.STT(language=SARVAM_LANGUAGE),
-            sarvam.TTS(target_language_code=SARVAM_LANGUAGE, speaker=SARVAM_TTS_SPEAKER),
+            sarvam.STT(language=locale),
+            sarvam.TTS(target_language_code=locale, speaker=speaker),
         )
     return (
         deepgram.STT(model="nova-3"),
@@ -63,16 +82,17 @@ def _text_of(msg) -> str:
     return ""
 
 
-async def _ask_brain(question: str) -> dict:
+async def _ask_brain(question: str, language: str = "en") -> dict:
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(
-            f"{BRAIN_API_URL}/api/agent/ask", json={"question": question, "verify": False}
+            f"{BRAIN_API_URL}/api/agent/ask",
+            json={"question": question, "verify": False, "language": language},
         )
         return r.json()
 
 
 class LumenAgent(Agent):
-    def __init__(self) -> None:
+    def __init__(self, language: str = "en") -> None:
         super().__init__(
             instructions=(
                 "You are Lumen, a voice assistant that answers questions about the "
@@ -80,6 +100,7 @@ class LumenAgent(Agent):
             )
         )
         self.room = None
+        self.language = language
 
     async def _publish(self, data: dict) -> None:
         if self.room is None:
@@ -106,7 +127,7 @@ class LumenAgent(Agent):
         except Exception:
             ack = None
         try:
-            result = await _ask_brain(question)
+            result = await _ask_brain(question, self.language)
             answer = result.get("answer", "")
             spoken = CITE_RE.sub("", answer).strip() or "I don't have that in the connected sources."
         except Exception:
@@ -131,16 +152,17 @@ class LumenAgent(Agent):
 
 async def entrypoint(ctx: JobContext) -> None:
     await ctx.connect()
+    lang = _lang_from_room(ctx.room.name)
     try:
         await ctx.room.local_participant.set_name("Lumen")
     except Exception:
         pass
-    stt, tts = _build_stt_tts()
+    stt, tts = _build_stt_tts(lang)
     session = AgentSession(stt=stt, tts=tts, vad=silero.VAD.load())
-    agent = LumenAgent()
+    agent = LumenAgent(lang)
     await session.start(agent=agent, room=ctx.room)
     agent.room = ctx.room
-    await session.say("Hi, I'm Lumen. Ask me anything about the codebase.")
+    await session.say(GREETINGS.get(lang, GREETINGS["en"]))
 
 
 if __name__ == "__main__":

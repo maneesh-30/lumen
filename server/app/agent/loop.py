@@ -27,7 +27,7 @@ def _citations(text: str, evidence: list[dict]) -> list[dict]:
     return [e for e in evidence if e["id"] in ids]
 
 
-def answer(question: str, workspace_id: str = "demo", limit: int = 6, run_verify: bool = True) -> dict:
+def answer(question: str, workspace_id: str = "demo", limit: int = 6, run_verify: bool = True, language: str = "en") -> dict:
     trace: list[dict] = []
 
     # ---- retrieve ----
@@ -48,9 +48,19 @@ def answer(question: str, workspace_id: str = "demo", limit: int = 6, run_verify
         f'[{e["id"]}] {e["file"]}:{e["start_line"]}-{e["end_line"]}\n{e["text"]}'
         for e in evidence
     )
+    lang_name = {"te": "Telugu", "hi": "Hindi"}.get(language, "English")
+    lang_note = (
+        ""
+        if lang_name == "English"
+        else (
+            f"\n\nWrite the answer in {lang_name}. Keep file names, code identifiers, and the "
+            f'[E#] citation markers exactly as written. If there is no evidence, still reply with '
+            f'the exact English sentence "{ABSTAIN}".'
+        )
+    )
     compose_messages = [
         {"role": "system", "content": prompts.COMPOSE_SYSTEM},
-        {"role": "user", "content": f"Question: {question}\n\nEvidence:\n{ev_block}"},
+        {"role": "user", "content": f"Question: {question}\n\nEvidence:\n{ev_block}{lang_note}"},
     ]
     t1 = time.perf_counter()
     resp = _client.chat.completions.create(

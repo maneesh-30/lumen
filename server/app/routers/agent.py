@@ -11,8 +11,9 @@ class AskRequest(BaseModel):
     question: str
     workspace_id: str = "demo"
     verify: bool = True
+    language: str = "en"
 
 
 @router.post("/ask")
 def ask(req: AskRequest) -> dict:
-    return answer(req.question, req.workspace_id, run_verify=req.verify)
+    return answer(req.question, req.workspace_id, run_verify=req.verify, language=req.language)
